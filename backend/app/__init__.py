@@ -1,40 +1,44 @@
-from flask import Flask
-from flask_migrate import Migrate
-from .models import db
-from dotenv import load_dotenv
 import os
+from dotenv import load_dotenv
+from flask import Flask
+from .config import Config
 
 load_dotenv()
-migrate = Migrate()
 
-def create_app():
+def create_app(config_class=Config):
+    """Create and configure an instance of the Flask application."""
+    from .extension import db, bcrypt, migrate
     app = Flask(__name__)
-    app.config['SQLALCHEMY_DATABASE_URI'] = 'sqlite:///quiz_master.db'
-    app.config['SECRET_KEY'] = os.getenv('SECRET_KEY')
-    app.config['SQLALCHEMY_TRACK_MODIFICATIONS'] = False
-    
-    db.init_app(app)
+    app.config.from_object(config_class)
 
+    db.init_app(app)
+    bcrypt.init_app(app)
     migrate.init_app(app, db)
+    
+    from .controllers.auth import auth_bp
+    app.register_blueprint(auth_bp, url_prefix='/api/auth')
+    from .controllers.admin import admin_bp
+    app.register_blueprint(admin_bp, url_prefix='/api/admin')
+    from .controllers.student import student_bp
+    app.register_blueprint(student_bp, url_prefix='/api/student')
 
     with app.app_context():
-        from .models import Question, Exam, Attempt, Student, Admin, Subject, Chapter, SelectedAnswer
-        db.create_all() 
-
-        admin = Admin.query.get(1)
+        from . import models
+        db.create_all()
+        admin = models.Admin.query.get(1)
         if not admin:
-            admin = Admin(
-                AdminID = 1,
-                Name = os.getenv('Admin_Username'),
-                Email = os.getenv('Admin_Email'),
+            print("Creating admin user...")
+            admin = models.Admin(
+                AdminID=1,
+                Name=os.getenv('Admin_Username'),
+                Email=os.getenv('Admin_Email'),
             )
-            Password = os.getenv('Admin_Password')
-            admin.set_password(Password)
+            password = os.getenv('Admin_Password')
+            admin.set_password(password)
             db.session.add(admin)
             db.session.commit()
-            print("admin created")
-            print(admin)
+            print("Admin created successfully.")
         else:
-            print(admin)
+            print("Admin already exists.")
 
     return app

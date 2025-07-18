@@ -1,8 +1,5 @@
 from flask_sqlalchemy import SQLAlchemy
-from werkzeug.security import generate_password_hash, check_password_hash
-
-db = SQLAlchemy()
-
+from .extension import bcrypt,db
 class Question(db.Model):
     QuestionID = db.Column(db.Integer, primary_key=True, autoincrement=True)
     ExamID = db.Column(db.Integer, db.ForeignKey('exam.ExamID', ondelete="CASCADE"), nullable=False)
@@ -49,14 +46,13 @@ class Student(db.Model):
     DOB = db.Column(db.DateTime, nullable=False)
     Email = db.Column(db.String(100), unique=True, nullable=False)
     PasswordHash = db.Column(db.String(128), nullable=False)
-
     CollegeName = db.Column(db.String(255), nullable=True)
     Degree = db.Column(db.String(10), nullable=False)
     attempts = db.relationship('Attempt', backref='student', lazy=True, cascade="all, delete-orphan")
     def set_password(self, password):
-        self.PasswordHash = generate_password_hash(password)
+        self.PasswordHash = bcrypt.generate_password_hash(password)
     def check_password(self, password):
-        return check_password_hash(self.PasswordHash, password)
+        return bcrypt.check_password_hash(self.PasswordHash, password)
 
 class Admin(db.Model):
     AdminID = db.Column(db.Integer, primary_key=True, autoincrement=True)
@@ -64,9 +60,12 @@ class Admin(db.Model):
     Email = db.Column(db.String(100), unique=True, nullable=False)
     PasswordHash = db.Column(db.String(128), nullable=False)
     def set_password(self, password):
-        self.PasswordHash = generate_password_hash(password)
+        self.PasswordHash = bcrypt.generate_password_hash(password).decode('utf-8')
+
     def check_password(self, password):
-        return check_password_hash(self.PasswordHash, password)
+        return bcrypt.check_password_hash(self.PasswordHash, password)
+
+
 
 
 class Subject(db.Model):
