@@ -46,7 +46,11 @@ def login():
                 'type': 'student',
                 'exp': datetime.datetime.utcnow() + datetime.timedelta(hours=1)
             }, current_app.config['SECRET_KEY'], algorithm='HS256')
-            return jsonify({'token': token, "message": "Student authenticated"}), 200
+            return jsonify({
+                'token': token, 
+                "message": "Student authenticated",
+                "student_id": student.StudentID
+            }), 200
         
     return jsonify({'message': 'Invalid credentials'}), 401
 

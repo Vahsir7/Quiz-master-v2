@@ -1,6 +1,5 @@
 <template>
   <div class="dashboard-layout">
-    <AdminNavbar />
     <div class="main-content">
       <header class="content-header">
         <h2>Dashboard Overview</h2>

@@ -2,17 +2,7 @@
   <div class="admin-layout">
     <AdminNavbar />
     <div class="main-content">
-      <header class="content-header">
-        <h2 class="content-header__title">
-          <slot name="header-title">Default Title</slot>
-        </h2>
-        <div>
-          <slot name="header-actions"></slot>
-        </div>
-      </header>
-      <main class="content-main">
-        <slot></slot>
-      </main>
+      <RouterView />
     </div>
   </div>
 </template>

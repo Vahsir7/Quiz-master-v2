@@ -29,17 +29,16 @@ export default {
   logout() {
     localStorage.removeItem('token');
     localStorage.removeItem('userType');
+    localStorage.removeItem('student_id'); // Also clear student_id on logout
   },
   registerStudent(studentData) {
-    return apiClient.post('/auth/register', studentData);
+    return apiClient.post('/student/register', studentData);
   },
 
-  // == Admin Dashboard ==
+  // == Admin Section ==
   getAdminDashboard() {
     return apiClient.get('/admin/dashboard');
   },
-
-  // == Students ==
   getStudents(studentId) {
     if (studentId) {
       return apiClient.get(`/admin/students?student_id=${studentId}`);
@@ -50,7 +49,6 @@ export default {
   deleteStudent(studentId) {
     return apiClient.delete(`/admin/students?student_id=${studentId}`);
   },
-  // == Subjects ==
   getSubjects(){
     return apiClient.get('/admin/subjects');
   },
@@ -63,8 +61,6 @@ export default {
   deleteSubject(subjectId) {
     return apiClient.delete(`/admin/subjects/${subjectId}`);
   },
-
-  // == Chapters ==
   getChapters(subjectId) {
     return apiClient.get(`/admin/subjects/${subjectId}/chapters`);
   },
@@ -77,8 +73,6 @@ export default {
   deleteChapter(chapterId) {
     return apiClient.delete(`/admin/chapters/${chapterId}`);
   },
-
-  // == Exams ==
   getExams(chapterId) {
     if (chapterId) {
       return apiClient.get(`/admin/exams?chapter_id=${chapterId}`);
@@ -95,8 +89,6 @@ export default {
   deleteExam(examId) {
     return apiClient.delete(`/admin/exams/${examId}`);
   },
-  
-  // == Questions ==
   getQuestions(examId) {
     return apiClient.get(`/admin/exams/${examId}/questions`);
   },
@@ -108,5 +100,60 @@ export default {
   },
   deleteQuestion(questionId) {
     return apiClient.delete(`/admin/questions/${questionId}`);
-  }
+  },
+
+  // == Student Section ==
+  getStudentDashboard() {
+    const studentId = localStorage.getItem('student_id');
+    if (!studentId) {
+      return Promise.reject(new Error('Student ID not found. Please log in again.'));
+    }
+    return apiClient.get(`/student/${studentId}/dashboard`);
+  },
+  getStudentSubjects() {
+    return apiClient.get('/student/subjects');
+  },
+  getStudentChapters(subjectId) {
+    if (subjectId) {
+        return apiClient.get(`/student/chapters?subject_id=${subjectId}`);
+    }
+    return apiClient.get('/student/chapters');
+  },
+  getStudentExams({ subjectId, chapterId }) {
+    let url = '/student/exams';
+    if (subjectId) {
+      url += `?subject_id=${subjectId}`;
+    } else if (chapterId) {
+      url += `?chapter_id=${chapterId}`;
+    }
+    return apiClient.get(url);
+  },
+  getStudentHistory() {
+    const studentId = localStorage.getItem('student_id');
+     if (!studentId) {
+      return Promise.reject(new Error('Student ID not found. Please log in again.'));
+    }
+    return apiClient.get(`/student/${studentId}/history`);
+  },
+  startExam(examId) {
+    const studentId = localStorage.getItem('student_id');
+    if (!studentId) {
+      return Promise.reject(new Error('Student ID not found. Please log in again.'));
+    }
+    return apiClient.post(`/student/${studentId}/exam/${examId}/start`);
+  },
+  submitExam(attemptId, answers) {
+    const studentId = localStorage.getItem('student_id');
+    if (!studentId) {
+      return Promise.reject(new Error('Student ID not found. Please log in again.'));
+    }
+    return apiClient.post(`/student/${studentId}/attempt/${attemptId}/submit`, { answers });
+  },
+  getExamResults(attemptId) {
+    const studentId = localStorage.getItem('student_id');
+     if (!studentId) {
+      return Promise.reject(new Error('Student ID not found. Please log in again.'));
+    }
+    return apiClient.get(`/student/${studentId}/attempt/${attemptId}/results`);
+  },
 };

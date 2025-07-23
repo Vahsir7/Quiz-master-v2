@@ -1,14 +1,22 @@
 import { createRouter, createWebHistory } from 'vue-router';
 import Login from '../views/Login.vue';
+
+// Admin Views
+import AdminLayout from '../components/AdminLayout.vue'; // The layout is now a route component
 import AdminDashboard from '../views/admin/AdminDashboard.vue';
 import Subjects from '../views/admin/Subjects.vue';
 import Chapters from '../views/admin/Chapters.vue';
-import Exams from '../views/admin/Exams.vue'; 
-import ExamCreate from '../views/admin/Exams.vue';
+import AdminExams from '../views/admin/AdminExams.vue';
 import Questions from '../views/admin/Questions.vue';
 import Students from '../views/admin/Students.vue';
 
-// Define the application routes
+// Student Views
+import StudentDashboard from '../views/student/Dashboard.vue';
+import StudentExams from '../views/student/Exams.vue';
+import StudentHistory from '../views/student/History.vue';
+import Quiz from '../views/student/Quiz.vue';
+import Results from '../views/student/Results.vue';
+
 const routes = [
     {
         path: '/',
@@ -20,62 +28,84 @@ const routes = [
         component: Login,
         meta: { requiresGuest: true }
     },
-    {
-        path: '/admin/dashboard',
-        name: 'AdminDashboard',
-        component: AdminDashboard,
-        meta: { requiresAuth: true, role: 'admin' }
-    },
     
+    // --- FIX: All admin routes are now nested under a single parent ---
     {
-        path: '/admin/subjects',
-        name: 'Subjects',
-        component: Subjects,
-        meta: { requiresAuth: true, role: 'admin' }
+        path: '/admin',
+        component: AdminLayout, // The AdminLayout provides the sidebar and frame
+        meta: { requiresAuth: true, role: 'admin' },
+        children: [
+            {
+                path: 'dashboard', // Path becomes '/admin/dashboard'
+                name: 'AdminDashboard',
+                component: AdminDashboard,
+            },
+            {
+                path: 'subjects', // Path becomes '/admin/subjects'
+                name: 'Subjects',
+                component: Subjects,
+            },
+            {
+                path: 'subjects/:subjectId/chapters',
+                name: 'Chapters',
+                component: Chapters,
+                props: true,
+            },
+            {
+                path: 'exams', // Path becomes '/admin/exams'
+                name: 'AdminExams', // Changed name to be unique
+                component: AdminExams,
+                props: route => ({ chapterId: route.query.chapterId }),
+            },
+            {
+                path: 'exam/:examId/questions',
+                name: 'Questions',
+                component: Questions,
+                props: true,
+            },
+            {
+                path: 'students', // Path becomes '/admin/users'
+                name: 'AdminUsers',
+                component: Students,
+            }
+        ]
+    },
+
+    // --- Student Routes (remain separate) ---
+    {
+        path: '/student/dashboard',
+        name: 'StudentDashboard',
+        component: StudentDashboard,
+        meta: { requiresAuth: true, role: 'student' }
     },
     {
-        path: '/admin/subjects/:subjectId/chapters',
-        name: 'Chapters',
-        component: Chapters,
+        path: '/student/exams',
+        name: 'StudentExams',
+        component: StudentExams,
+        meta: { requiresAuth: true, role: 'student' }
+    },
+    {
+        path: '/student/history',
+        name: 'StudentHistory',
+        component: StudentHistory,
+        meta: { requiresAuth: true, role: 'student' }
+    },
+    {
+        path: '/student/exam/:examId/attempt',
+        name: 'StudentQuiz',
+        component: Quiz,
         props: true,
-        meta: { requiresAuth: true, role: 'admin' }
+        meta: { requiresAuth: true, role: 'student' }
     },
     {
-        path: '/admin/exams',
-        name: 'Exams',
-        component: Exams,
-        props: route => ({ chapterId: route.query.chapterId }), 
-        meta: { requiresAuth: true, role: 'admin' }
-    },
-    {
-        path: '/admin/exams/new',
-        name: 'ExamCreate',
-        component: ExamCreate,
-        meta: { requiresAuth: true, role: 'admin' }
-    },
-    {
-        path: '/admin/exams/:examId/edit',
-        name: 'ExamEdit',
-        component: ExamCreate, // Reuse the same component for editing
+        path: '/student/attempt/:attemptId/results',
+        name: 'StudentResults',
+        component: Results,
         props: true,
-        meta: { requiresAuth: true, role: 'admin' }
-    },
-    {
-        path: '/admin/exams/:examId/questions',
-        name: 'Questions',
-        component: Questions,
-        props: true,
-        meta: { requiresAuth: true, role: 'admin' }
-    },
-    {
-        path: '/admin/students',
-        name: 'AdminStudents',
-        component: Students,
-        meta: { requiresAuth: true, role: 'admin' }
+        meta: { requiresAuth: true, role: 'student' }
     },
 ];
 
-// Create the router instance
 const router = createRouter({
   history: createWebHistory(import.meta.env.BASE_URL),
   routes,
@@ -86,8 +116,11 @@ router.beforeEach((to, from, next) => {
   const token = localStorage.getItem('token');
   const userType = localStorage.getItem('userType');
 
-  if (to.meta.requiresAuth) {
-    if (token && userType === to.meta.role) {
+  // FIX: Updated guard logic to correctly check roles on nested routes
+  const requiredRole = to.matched.find(record => record.meta.role)?.meta.role;
+
+  if (requiredRole) {
+    if (token && userType === requiredRole) {
       next();
     } else {
       localStorage.clear();
@@ -97,7 +130,6 @@ router.beforeEach((to, from, next) => {
     if (userType === 'admin') {
       next('/admin/dashboard');
     } else {
-      // Assuming a student dashboard route exists
       next('/student/dashboard'); 
     }
   } else {

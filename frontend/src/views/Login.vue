@@ -36,12 +36,6 @@
           </button>
         </div>
       </form>
-
-      <div class="text-center">
-        <a href="#" class="font-medium text-indigo-600 hover:text-indigo-500">
-          New here? Register
-        </a>
-      </div>
     </div>
   </div>
 </template>
@@ -72,15 +66,14 @@ export default {
         };
         const response = await apiService.login(credentials);
         
-        // Store token and user type in localStorage
         localStorage.setItem('token', response.data.token);
         localStorage.setItem('userType', this.userType);
 
-        // Redirect based on user type
         if (this.userType === 'admin') {
           this.$router.push('/admin/dashboard');
         } else {
-          // Redirect to student dashboard (assuming route exists)
+          // FIX: Store the student_id from the response
+          localStorage.setItem('student_id', response.data.student_id);
           this.$router.push('/student/dashboard');
         }
 
@@ -90,7 +83,6 @@ export default {
         } else {
           this.error = 'An unexpected error occurred. Please try again.';
         }
-        console.error('Login failed:', error);
       } finally {
         this.isLoading = false;
       }

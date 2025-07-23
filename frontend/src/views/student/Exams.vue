@@ -1,0 +1,331 @@
+<template>
+  <StudentLayout>
+    <div class="dashboard-header">
+      <h2>Browse All Exams</h2>
+      <p>Find a quiz to test your knowledge.</p>
+    </div>
+
+    <!-- Search and Filter Form -->
+    <div class="filter-bar">
+      <div class="filter-group">
+        <input 
+          type="text" 
+          v-model="filters.searchQuery" 
+          placeholder="Search by exam name..."
+          class="search-input"
+        />
+      </div>
+      <div class="filter-group">
+        <select v-model="filters.subject" class="filter-select">
+          <option value="All">All Subjects</option>
+          <option v-for="subject in subjects" :key="subject.subject_id" :value="subject.subject_id">
+            {{ subject.subject_name }}
+          </option>
+        </select>
+      </div>
+      <div class="filter-group">
+        <select v-model="filters.chapter" class="filter-select">
+          <option value="All">All Chapters</option>
+           <option v-for="chapter in availableChapters" :key="chapter.chapter_id" :value="chapter.chapter_id">
+            {{ chapter.chapter_name }}
+          </option>
+        </select>
+      </div>
+      <div class="filter-group checkbox-group">
+        <label for="past-exams">View Past Exams</label>
+        <input type="checkbox" id="past-exams" v-model="filters.past" class="filter-checkbox" />
+      </div>
+    </div>
+
+    <div v-if="loading" class="text-center">Loading exams...</div>
+    <div v-if="error" class="error-box">{{ error }}</div>
+
+    <!-- Exams Table -->
+    <div v-if="!loading" class="table-wrapper">
+      <table class="min-w-full divide-y divide-gray-200">
+        <thead class="bg-gray-50">
+          <tr>
+            <th>Exam Name</th>
+            <th>Total Marks</th>
+            <th>Questions</th>
+            <th>Duration</th>
+            <th>Deadline</th>
+            <th>Action</th>
+          </tr>
+        </thead>
+        <tbody class="bg-white divide-y divide-gray-200">
+          <tr v-for="exam in filteredExams" :key="exam.exam_id">
+            <td class="font-medium">{{ exam.exam_name }}</td>
+            <td>{{ exam.total_marks }}</td>
+            <td>{{ exam.total_questions }}</td>
+            <td>{{ exam.total_duration }} mins</td>
+            <td>{{ new Date(exam.exam_date).toLocaleDateString() }}</td>
+            <td>
+              <button @click="openStartModal(exam)" v-if="isExamActive(exam.exam_date)" class="btn-start-quiz">Start</button>
+              <span v-else class="text-red-500 font-semibold">Over</span>
+            </td>
+          </tr>
+          <tr v-if="filteredExams.length === 0">
+            <td colspan="6" class="text-center text-gray-500 py-4">No exams match your criteria.</td>
+          </tr>
+        </tbody>
+      </table>
+    </div>
+
+    <!-- Start Exam Confirmation Modal -->
+    <div v-if="isStartModalOpen" class="modal-overlay">
+      <div class="modal-content text-center">
+        <div class="mx-auto flex items-center justify-center h-12 w-12 rounded-full bg-blue-100">
+          <i class="fas fa-play-circle text-blue-600 text-xl"></i>
+        </div>
+        <h3 class="text-lg font-medium text-gray-900 mt-5">Start Exam</h3>
+        <p class="text-sm text-gray-500 mt-2">Are you sure you want to begin the exam "{{ examToStart.exam_name }}"?</p>
+        <div class="text-left text-sm text-gray-600 mt-4 p-3 bg-gray-50 rounded-lg">
+            <p><strong>Questions:</strong> {{ examToStart.total_questions }}</p>
+            <p><strong>Duration:</strong> {{ examToStart.total_duration }} minutes</p>
+        </div>
+        <div class="flex justify-center space-x-4 mt-6">
+          <button @click="closeStartModal" class="btn btn-secondary">Cancel</button>
+          <button @click="confirmStartExam" class="btn-start-quiz">Start Exam</button>
+        </div>
+      </div>
+    </div>
+
+  </StudentLayout>
+</template>
+
+<script>
+import apiService from '@/services/apiService';
+import StudentLayout from '@/components/StudentLayout.vue';
+
+export default {
+  name: 'StudentExams',
+  components: { StudentLayout },
+  data() {
+    return {
+      exams: [],
+      subjects: [],
+      chapters: [],
+      loading: true,
+      error: null,
+      filters: {
+        searchQuery: '',
+        subject: 'All',
+        chapter: 'All',
+        past: false,
+      },
+      isStartModalOpen: false,
+      examToStart: null,
+    };
+  },
+  computed: {
+    availableChapters() {
+      if (this.filters.subject === 'All') {
+        return this.chapters;
+      }
+      return this.chapters.filter(chapter => chapter.subject_id === this.filters.subject);
+    },
+    filteredExams() {
+      let exams = this.exams;
+
+      if (this.filters.searchQuery) {
+        const lowerCaseSearch = this.filters.searchQuery.toLowerCase();
+        exams = exams.filter(exam => 
+          exam.exam_name.toLowerCase().includes(lowerCaseSearch)
+        );
+      }
+      
+      const chapterIdsInSubject = new Set(this.availableChapters.map(c => c.chapter_id));
+
+      if (this.filters.subject !== 'All') {
+        exams = exams.filter(exam => chapterIdsInSubject.has(exam.chapter_id));
+      }
+
+      if (this.filters.chapter !== 'All') {
+        exams = exams.filter(exam => exam.chapter_id === this.filters.chapter);
+      }
+
+      const today = new Date();
+      today.setHours(0, 0, 0, 0);
+      if (this.filters.past) {
+        exams = exams.filter(exam => new Date(exam.exam_date) < today);
+      } else {
+        exams = exams.filter(exam => new Date(exam.exam_date) >= today);
+      }
+
+      return exams;
+    }
+  },
+  watch: {
+    'filters.subject'() {
+      this.filters.chapter = 'All';
+    }
+  },
+  async mounted() {
+    this.fetchAllData();
+  },
+  methods: {
+    async fetchAllData() {
+      this.loading = true;
+      this.error = null;
+      try {
+        const [examsRes, subjectsRes, chaptersRes] = await Promise.all([
+          apiService.getStudentExams({}),
+          apiService.getStudentSubjects(),
+          apiService.getStudentChapters() 
+        ]);
+        this.exams = examsRes.data;
+        this.subjects = subjectsRes.data;
+        this.chapters = chaptersRes.data;
+      } catch (err) {
+        this.error = 'Failed to load page data.';
+        console.error(err);
+      } finally {
+        this.loading = false;
+      }
+    },
+    isExamActive(deadline) {
+      const today = new Date();
+      today.setHours(0, 0, 0, 0);
+      return new Date(deadline) >= today;
+    },
+    openStartModal(exam) {
+      this.examToStart = exam;
+      this.isStartModalOpen = true;
+    },
+    closeStartModal() {
+      this.isStartModalOpen = false;
+      this.examToStart = null;
+    },
+    // FIX: This method now correctly navigates to the quiz page.
+    confirmStartExam() {
+      if (!this.examToStart) return;
+      // Navigate to the 'StudentQuiz' route, passing the examId as a parameter.
+      // The Quiz.vue component will then handle the API call to start the exam attempt.
+      this.$router.push({ 
+        name: 'StudentQuiz', 
+        params: { examId: this.examToStart.exam_id } 
+      });
+    }
+  }
+};
+</script>
+
+<style scoped>
+.dashboard-header { margin-bottom: 2rem; }
+.dashboard-header h2 { font-size: 2rem; font-weight: bold; color: #2c3e50; }
+.dashboard-header p { font-size: 1rem; color: #7f8c8d; }
+.error-box { background-color: #e74c3c; color: white; padding: 1rem; border-radius: 5px; margin: 1rem 0; }
+
+.filter-bar {
+  display: flex;
+  flex-wrap: wrap;
+  gap: 1rem;
+  padding: 1rem;
+  background-color: #ffffff;
+  border-radius: 8px;
+  margin-bottom: 1.5rem;
+  box-shadow: 0 2px 4px rgba(0,0,0,0.05);
+}
+
+.filter-group {
+  flex: 1 1 200px;
+}
+
+.search-input, .filter-select {
+  width: 100%;
+  padding: 0.75rem;
+  border: 1px solid #bdc3c7;
+  border-radius: 5px;
+  font-size: 1rem;
+}
+
+.checkbox-group {
+  display: flex;
+  align-items: center;
+  gap: 0.5rem;
+  flex-basis: 100%;
+  flex-grow: 0;
+  min-width: 150px;
+}
+.filter-checkbox {
+  width: 1.25rem;
+  height: 1.25rem;
+}
+
+.table-wrapper {
+  background-color: #ffffff;
+  box-shadow: 0 4px 6px rgba(0,0,0,0.1);
+  border-radius: 8px;
+  overflow: hidden;
+}
+
+th {
+  padding: 0.75rem 1rem;
+  text-align: left;
+  font-size: 0.875rem;
+  font-weight: 600;
+  color: #7f8c8d;
+  text-transform: uppercase;
+  background-color: #f4f7f6;
+}
+
+td {
+  padding: 1rem;
+  border-bottom: 1px solid #ecf0f1;
+}
+
+.btn-start-quiz {
+  background-color: #2ecc71;
+  color: white;
+  border: none;
+  padding: 0.5rem 1rem;
+  border-radius: 5px;
+  font-weight: bold;
+  cursor: pointer;
+  transition: background-color 0.2s;
+}
+.btn-start-quiz:hover {
+  background-color: #27ae60;
+}
+
+/* Modal styles from admin.css for consistency */
+.modal-overlay {
+  position: fixed;
+  inset: 0;
+  background-color: rgba(0, 0, 0, 0.5);
+  display: flex;
+  justify-content: center;
+  align-items: center;
+  z-index: 50;
+}
+
+.modal-content {
+  background-color: white;
+  border-radius: 0.5rem;
+  box-shadow: 0 10px 15px rgba(0, 0, 0, 0.1);
+  padding: 1.5rem;
+  width: 100%;
+  max-width: 500px;
+}
+
+.btn {
+  display: inline-flex;
+  align-items: center;
+  font-weight: bold;
+  padding: 0.5rem 1rem;
+  border-radius: 0.5rem;
+  border: none;
+  cursor: pointer;
+  transition: background-color 0.2s;
+  text-decoration: none;
+  color: white;
+}
+.btn-secondary {
+  background-color: #e5e7eb; /* gray-200 */
+  color: #1f2937;
+}
+.btn-secondary:hover {
+  background-color: #d1d5db; /* gray-300 */
+}
+</style>

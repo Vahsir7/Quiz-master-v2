@@ -1,5 +1,5 @@
 from functools import wraps
-from flask import request, jsonify, current_app
+from flask import request, jsonify, current_app, g
 import jwt
 from .models import Admin, Student
 
@@ -35,7 +35,7 @@ def authentication(required_role):
                     return jsonify({'message': 'Unauthorized user type!'}), 403
                 if not current_user:
                     return jsonify({'message': 'User associated with token not found!'}), 404
-                
+                g = current_user
             except jwt.ExpiredSignatureError:
                 print("TOKEN ERROR: Expired signature.")
                 return jsonify({'message': 'Token has expired!'}), 401
@@ -45,7 +45,7 @@ def authentication(required_role):
             print(f"Current user: {current_user}")
             if not current_user:
                 return jsonify({'message': 'User not found!'}), 404
-            return f(current_user, *args, **kwargs)
+            return f(*args, **kwargs)
         return decorated_function
     return decorator
 

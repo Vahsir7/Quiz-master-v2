@@ -1,6 +1,6 @@
 from flask import Blueprint, jsonify, request, current_app
 from app.extension import db
-from app.models import Admin, Attempt, Exam, Subject, Student, Chapter, Question, Student
+from app.models import Admin, Attempt, Exam, Subject, Student, Chapter, Question
 from app.decorators import authentication
 from datetime import datetime
 
@@ -47,7 +47,7 @@ def dashboard():
 
     except Exception as e:
         return jsonify({'message': 'Error fetching dashboard data', 'error': str(e)}), 500
-    
+
 # Student
 @authentication('admin')
 @admin_bp.route('/students', methods=['GET'])
@@ -60,32 +60,30 @@ def get_students():
             if not student:
                 return jsonify({'message': 'Student not found'}), 404
             return jsonify({
-                'StudentID': student.StudentID, 
-                'Name': student.Name, 
-                'Email': student.Email, 
-                'DOB': student.DOB.strftime("%Y-%m-%d"), 
-                'CollegeName': student.CollegeName, 
+                'StudentID': student.StudentID,
+                'Name': student.Name,
+                'Email': student.Email,
+                'DOB': student.DOB.strftime("%Y-%m-%d"),
+                'CollegeName': student.CollegeName,
                 'Degree': student.Degree
             }), 200
         else:
             students = Student.query.all()
-            return jsonify([{'StudentID': student.StudentID, 
-                            'Name': student.Name, 
-                            'Email': student.Email}     
+            return jsonify([{'StudentID': student.StudentID,
+                            'Name': student.Name,
+                            'Email': student.Email}
                             for student in students]), 200
     except Exception as e:
         return jsonify({'message': 'Error fetching students', 'error': str(e)}), 500
 
 @authentication('admin')
 @admin_bp.route('/students', methods=['DELETE'])
-def delete_student(): 
+def delete_student():
     try:
         student_id = request.args.get('student_id', type=int)
         if not student_id:
             return jsonify({'message': 'student_id query parameter is required to delete a student'}), 400
         # Logic for: DELETE /admin/students?student_id={{id}}
-        if not Student.query.get(student_id):
-            return jsonify({'message': 'Student not found'}), 404
         student = Student.query.get(student_id)
         if not student:
             return jsonify({'message': 'Student not found'}), 404
@@ -95,15 +93,14 @@ def delete_student():
     except Exception as e:
         db.session.rollback()
         return jsonify({'message': 'Error deleting student', 'error': str(e)}), 500
-    
+
 
 ## Subject CRUD
 
 @authentication('admin')
 @admin_bp.route('/subjects', methods=['POST'])
-def create_subject( ):
+def create_subject():
     data = request.get_json()
-    print(data)
     if not data:
         return jsonify({'message': 'Invalid input'}), 400
     try:
@@ -118,10 +115,10 @@ def create_subject( ):
     except Exception as e:
         db.session.rollback()
         return jsonify({'message': 'Error creating subject', 'error': str(e)}), 500
-    
+
 @authentication('admin')
 @admin_bp.route('/subjects/<int:subject_id>', methods=['PUT'])
-def update_subject( subject_id):
+def update_subject(subject_id):
     data = request.get_json()
     if not data:
         return jsonify({'message': 'Invalid input'}), 400
@@ -136,10 +133,10 @@ def update_subject( subject_id):
     except Exception as e:
         db.session.rollback()
         return jsonify({'message': 'Error updating subject', 'error': str(e)}), 500
-    
+
 @authentication('admin')
 @admin_bp.route('/subjects/<int:subject_id>', methods=['DELETE'])
-def delete_subject(  subject_id):
+def delete_subject(subject_id):
     try:
         subject = Subject.query.get(subject_id)
         if not subject:
@@ -153,22 +150,21 @@ def delete_subject(  subject_id):
 
 @authentication('admin')
 @admin_bp.route('/subjects', methods=['GET'])
-def get_subjects( ):
-    print("current_user:",  )
+def get_subjects():
     try:
         subjects = Subject.query.all()
-        return jsonify([{'SubjectID': subject.SubjectID, 
-                         'SubjectName': subject.SubjectName, 
-                         'Description': subject.Description} 
+        return jsonify([{'SubjectID': subject.SubjectID,
+                         'SubjectName': subject.SubjectName,
+                         'Description': subject.Description}
                           for subject in subjects]), 200
     except Exception as e:
         return jsonify({'message': 'Error fetching subjects', 'error': str(e)}), 500
-    
+
 #Chapter CRUD
 
 @authentication('admin')
 @admin_bp.route('/subjects/<int:subject_id>/chapters', methods=['POST'])
-def create_chapter(  subject_id):
+def create_chapter(subject_id):
     subject = Subject.query.get_or_404(subject_id)
     if not subject:
         return jsonify({'message': 'Subject not found'}), 404
@@ -178,12 +174,12 @@ def create_chapter(  subject_id):
     try:
         chapter_name = data.get('ChapterName')
         description = data.get('Description', '')
-                
+
         if Chapter.query.filter_by(ChapterName=chapter_name, SubjectID=subject_id).first():
             return jsonify({'message': 'A chapter with this name already exists for the subject'}), 409
-        
-        new_chapter = Chapter(SubjectID=subject_id, 
-                              ChapterName=chapter_name, 
+
+        new_chapter = Chapter(SubjectID=subject_id,
+                              ChapterName=chapter_name,
                               Description=description)
         db.session.add(new_chapter)
         db.session.commit()
@@ -195,21 +191,21 @@ def create_chapter(  subject_id):
 
 @authentication('admin')
 @admin_bp.route('/subjects/<int:subject_id>/chapters', methods=['GET'])
-def get_chapters(  subject_id):
+def get_chapters(subject_id):
     try:
         chapters = Chapter.query.filter_by(SubjectID=subject_id).all()
-        return jsonify([{'ChapterID': chapter.ChapterID, 
-                         'ChapterName': chapter.ChapterName, 
-                         'Description': chapter.Description, 
-                         'SubjectID': chapter.SubjectID} 
+        return jsonify([{'ChapterID': chapter.ChapterID,
+                         'ChapterName': chapter.ChapterName,
+                         'Description': chapter.Description,
+                         'SubjectID': chapter.SubjectID}
                           for chapter in chapters]), 200
-    
+
     except Exception as e:
         return jsonify({'message': 'Error fetching chapters', 'error': str(e)}), 500
 
 @authentication('admin')
 @admin_bp.route('/chapters/<int:chapter_id>', methods=['PUT'])
-def update_chapter(  chapter_id):
+def update_chapter(chapter_id):
     data = request.get_json()
     if not data:
         return jsonify({'message': 'Invalid input'}), 400
@@ -217,19 +213,19 @@ def update_chapter(  chapter_id):
         chapter = Chapter.query.get(chapter_id)
         if not chapter:
             return jsonify({'message': 'Chapter not found'}), 404
-        
+
         chapter.ChapterName = data.get('ChapterName', chapter.ChapterName)
         chapter.Description = data.get('Description', chapter.Description)
         db.session.commit()
         return jsonify({'message': 'Chapter updated successfully'}), 200
-    
+
     except Exception as e:
         db.session.rollback()
         return jsonify({'message': 'Error updating chapter', 'error': str(e)}), 500
 
 @authentication('admin')
 @admin_bp.route('/chapters/<int:chapter_id>', methods=['DELETE'])
-def delete_chapter(  chapter_id):
+def delete_chapter(chapter_id):
     try:
         chapter = Chapter.query.get(chapter_id)
         if not chapter:
@@ -253,23 +249,23 @@ def get_exam():
             # Logic for: GET /admin/exams?chapter_id={{id}}
             exams = Exam.query.filter_by(ChapterID=chapter_id).all()
             return jsonify([{
-                'ExamID': exam.ExamID, 
-                'ExamName': exam.ExamName, 
-                'TotalMarks': exam.TotalMarks, 
-                'TotalQuestions': exam.TotalQuestions, 
-                'TotalDuration': exam.TotalDuration, 
-                'ExamDate': exam.ExamDate, 
+                'ExamID': exam.ExamID,
+                'ExamName': exam.ExamName,
+                'TotalMarks': exam.TotalMarks,
+                'TotalQuestions': exam.TotalQuestions,
+                'TotalDuration': exam.TotalDuration,
+                'ExamDate': exam.ExamDate,
                 'ChapterID': exam.ChapterID
             } for exam in exams]), 200
         else:
             # Logic for: GET /admin/exams
             all_exams = db.session.query(
-                Exam, 
-                Chapter.ChapterName, 
+                Exam,
+                Chapter.ChapterName,
                 Subject.SubjectName
             ).join(Chapter, Exam.ChapterID == Chapter.ChapterID)\
                 .join(Subject, Chapter.SubjectID == Subject.SubjectID).all()
-            
+
             result = []
             for exam, chapter_name, subject_name in all_exams:
                 result.append({
@@ -284,7 +280,7 @@ def get_exam():
             return jsonify(result), 200
     except Exception as e:
         return jsonify({'message': 'Error fetching exams', 'error': str(e)}), 500
-        
+
 @authentication('admin')
 @admin_bp.route('/exams', methods=['POST'])
 def create_exam():
@@ -292,11 +288,11 @@ def create_exam():
     chapter_id = request.args.get('chapter_id', type=int)
     if not chapter_id:
         return jsonify({'message': 'chapter_id query parameter is required to create an exam'}), 400
-    
+
     data = request.get_json()
     if not Chapter.query.get(chapter_id):
         return jsonify({'message': 'Chapter not found'}), 404
-        
+
     try:
         new_exam = Exam(
             ChapterID=chapter_id,
@@ -309,7 +305,7 @@ def create_exam():
         db.session.add(new_exam)
         db.session.commit()
         return jsonify({'message': 'Exam created successfully', 'exam_id': new_exam.ExamID}), 201
-    
+
     except Exception as e:
         db.session.rollback()
         return jsonify({'message': 'Error creating exam', 'error': str(e)}), 500
@@ -324,15 +320,15 @@ def update_exam(exam_id):
         exam = Exam.query.get(exam_id)
         if not exam:
             return jsonify({'message': 'Exam not found'}), 404
-        
+
         exam.ExamName = data.get('ExamName', exam.ExamName)
         exam.TotalDuration = data.get('TotalDuration', exam.TotalDuration)
         if data.get('ExamDate'):
             exam.ExamDate = datetime.strptime(data.get('ExamDate')+"T00:00:00", "%Y-%m-%dT%H:%M:%S")
-        
+
         db.session.commit()
         return jsonify({'message': 'Exam updated successfully'}), 200
-    
+
     except Exception as e:
         db.session.rollback()
         return jsonify({'message': 'Error updating exam', 'error': str(e)}), 500
@@ -355,7 +351,7 @@ def delete_exam(exam_id):
 
 @authentication('admin')
 @admin_bp.route('/exams/<int:exam_id>/questions', methods=['POST'])
-def create_question( exam_id):
+def create_question(exam_id):
     exam = Exam.query.get_or_404(exam_id)
     if not exam:
         return jsonify({'message': 'Exam not found'}), 404
@@ -374,15 +370,15 @@ def create_question( exam_id):
 
         if not Exam.query.get(exam_id):
             return jsonify({'message': 'Exam not found'}), 404
-        
-        new_question = Question(ExamID=exam_id, 
-                                QuestionStatement=question_statement, 
-                                Option1=option1, 
-                                Option2=option2, 
-                                Option3=option3, 
-                                Option4=option4, 
-                                CorrectOption=correct_option, 
-                                Marks=marks, 
+
+        new_question = Question(ExamID=exam_id,
+                                QuestionStatement=question_statement,
+                                Option1=option1,
+                                Option2=option2,
+                                Option3=option3,
+                                Option4=option4,
+                                CorrectOption=correct_option,
+                                Marks=marks,
                                 NegMarks=negative_marks)
         db.session.add(new_question)
         exam = Exam.query.get(exam_id)
@@ -396,19 +392,19 @@ def create_question( exam_id):
 
 @authentication('admin')
 @admin_bp.route('/exams/<int:exam_id>/questions', methods=['GET'])
-def get_questions( exam_id):
+def get_questions(exam_id):
     try:
         questions = Question.query.filter_by(ExamID=exam_id).all()
-        return jsonify([{'QuestionID': question.QuestionID, 
-                         'ExamID': question.ExamID, 
-                         'QuestionStatement': question.QuestionStatement, 
-                         'Option1': question.Option1, 
-                         'Option2': question.Option2, 
-                         'Option3': question.Option3, 
-                         'Option4': question.Option4, 
-                         'CorrectOption': question.CorrectOption, 
-                         'Marks': question.Marks, 
-                         'NegMarks': question.NegMarks} 
+        return jsonify([{'QuestionID': question.QuestionID,
+                         'ExamID': question.ExamID,
+                         'QuestionStatement': question.QuestionStatement,
+                         'Option1': question.Option1,
+                         'Option2': question.Option2,
+                         'Option3': question.Option3,
+                         'Option4': question.Option4,
+                         'CorrectOption': question.CorrectOption,
+                         'Marks': question.Marks,
+                         'NegMarks': question.NegMarks}
                           for question in questions]), 200
     except Exception as e:
         return jsonify({'message': 'Error fetching questions', 'error': str(e)}), 500
@@ -423,7 +419,7 @@ def update_question(question_id):
         question = Question.query.get(question_id)
         if not question:
             return jsonify({'message': 'Question not found'}), 404
-        
+
         question.QuestionStatement = data.get('QuestionStatement', question.QuestionStatement)
         question.Option1 = data.get('Option1', question.Option1)
         question.Option2 = data.get('Option2', question.Option2)
@@ -434,10 +430,10 @@ def update_question(question_id):
         exam.TotalMarks = (exam.TotalMarks - question.Marks) + data.get('Marks', question.Marks)
         question.Marks = data.get('Marks', question.Marks)
         question.NegMarks = data.get('NegMarks', question.NegMarks)
-        
+
         db.session.commit()
         return jsonify({'message': 'Question updated successfully'}), 200
-    
+
     except Exception as e:
         db.session.rollback()
         return jsonify({'message': 'Error updating question', 'error': str(e)}), 500
@@ -458,4 +454,3 @@ def delete_question(question_id):
     except Exception as e:
         db.session.rollback()
         return jsonify({'message': 'Error deleting question', 'error': str(e)}), 500
-
