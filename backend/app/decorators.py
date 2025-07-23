@@ -3,43 +3,49 @@ from flask import request, jsonify, current_app
 import jwt
 from .models import Admin, Student
 
-def token_required(f):
-    @wraps(f)
-    def decorated(*args, **kwargs):
-        token = None
-        if 'Authorization' in request.headers:
-            token = request.headers['Authorization'].split(" ")[1]
-        
-        if not token:
-            return jsonify({'message': 'Token is missing!'}), 401
-        
-        try:
-            data = jwt.decode(token, current_app.config['SECRET_KEY'], algorithms=["HS256"])
-            if 'sub' in data:
-                user_id = data['sub']
-                user_type = data.get('type', 'student')
-                if user_type == 'admin':
-                    current_user = Admin.query.get(user_id)
-                else:
-                    current_user = Student.query.get(user_id) 
-                if not current_user:
-                    return jsonify({'message': 'User not found!'}), 404
-            
-        except jwt.ExpiredSignatureError:
-            return jsonify({'message': 'Token has expired!'}), 401
-        except jwt.InvalidTokenError:
-            return jsonify({'message': 'Invalid token!'}), 401
-        
-        return f(current_user, *args, **kwargs)
-    
-    return decorated
-
-def roles_required(*roles):
+def authentication(required_role):
     def decorator(f):
         @wraps(f)
-        def decorated_function(current_user, *args, **kwargs):
-            if current_user.role not in roles:
-                return jsonify({'message': 'Access denied'}), 403
+        def decorated_function(*args, **kwargs):
+            token = None
+            if 'Authorization' in request.headers:
+                try:
+                    token = request.headers['Authorization'].split(" ")[1]
+                except IndexError:
+                    return jsonify({'message': 'Malformed token header!'}), 400
+            if not token:
+                return jsonify({'message': 'Token is missing!'}), 401
+            try:
+                print(f"Decoding token: {token}")
+                # Decode the token using the secret key
+                print(f"Using secret key: {current_app.config['SECRET_KEY']}")
+                data = jwt.decode(token, current_app.config['SECRET_KEY'], algorithms=["HS256"])
+                user_id = data['sub']
+                user_type = data.get('type') 
+                current_user = None
+                if user_type == required_role:
+                    if user_type == 'admin':
+                        current_user = Admin.query.get(user_id)
+                    elif user_type == 'student':
+                        current_user = Student.query.get(user_id)
+                    else:
+                        return jsonify({'message': 'Cannot fetch user!'}), 404
+                    print(f"User found in database: {current_user}")
+                else:
+                    return jsonify({'message': 'Unauthorized user type!'}), 403
+                if not current_user:
+                    return jsonify({'message': 'User associated with token not found!'}), 404
+                
+            except jwt.ExpiredSignatureError:
+                print("TOKEN ERROR: Expired signature.")
+                return jsonify({'message': 'Token has expired!'}), 401
+            except jwt.InvalidTokenError:
+                print("TOKEN ERROR: Invalid token. Secret key mismatch or malformed token.")
+                return jsonify({'message': 'Invalid token!'}), 401
+            print(f"Current user: {current_user}")
+            if not current_user:
+                return jsonify({'message': 'User not found!'}), 404
             return f(current_user, *args, **kwargs)
         return decorated_function
     return decorator
+

@@ -23,7 +23,10 @@ class Exam(db.Model):
     
     questions = db.relationship('Question', backref='exam', lazy=True, cascade="all, delete-orphan")
     attempts = db.relationship('Attempt', backref='exam', lazy=True, cascade="all, delete-orphan")
-    chapter = db.relationship('Chapter', backref='exams', lazy=True) 
+    chapter = db.relationship('Chapter', 
+                              backref=db.backref('exams', lazy=True, cascade="all, delete-orphan"), 
+                              lazy=True)
+
 
 class Attempt(db.Model):
     AttemptID = db.Column(db.Integer, primary_key=True, autoincrement=True)
@@ -65,9 +68,6 @@ class Admin(db.Model):
     def check_password(self, password):
         return bcrypt.check_password_hash(self.PasswordHash, password)
 
-
-
-
 class Subject(db.Model):
     SubjectID = db.Column(db.Integer, primary_key=True, autoincrement=True)
     SubjectName = db.Column(db.String(100), nullable=False)
@@ -79,3 +79,4 @@ class Chapter(db.Model):
     SubjectID = db.Column(db.Integer, db.ForeignKey('subject.SubjectID', ondelete="CASCADE"), nullable=False)
     ChapterName = db.Column(db.String(100), nullable=False)
     Description = db.Column(db.String(255), nullable=True, default="Null")
+

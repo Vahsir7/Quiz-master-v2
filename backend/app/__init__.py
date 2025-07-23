@@ -1,15 +1,19 @@
 import os
-from dotenv import load_dotenv
+
 from flask import Flask
 from .config import Config
-
-load_dotenv()
+from flask_cors import CORS
+from dotenv import load_dotenv
 
 def create_app(config_class=Config):
     """Create and configure an instance of the Flask application."""
+    load_dotenv()  
+    #print("SECRET_KEY from .env:", os.getenv('SECRET_KEY')) 
     from .extension import db, bcrypt, migrate
     app = Flask(__name__)
     app.config.from_object(config_class)
+
+    CORS(app)
 
     db.init_app(app)
     bcrypt.init_app(app)
@@ -27,7 +31,7 @@ def create_app(config_class=Config):
         db.create_all()
         admin = models.Admin.query.get(1)
         if not admin:
-            print("Creating admin user...")
+            #print("Creating admin user...")
             admin = models.Admin(
                 AdminID=1,
                 Name=os.getenv('Admin_Username'),
@@ -37,8 +41,9 @@ def create_app(config_class=Config):
             admin.set_password(password)
             db.session.add(admin)
             db.session.commit()
-            print("Admin created successfully.")
-        else:
-            print("Admin already exists.")
+            #print("Admin created successfully.")
+        #else:
+            #print("Admin already exists.")
 
     return app
+

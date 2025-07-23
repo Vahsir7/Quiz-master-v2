@@ -14,8 +14,7 @@ def login():
     login_type = data.get('type')
     email = data.get('email')
     password = data.get('password')
-    
-
+    print(f"Login type: {login_type}, Email: {email}, Password: {password}")
     if not email or not password:
         return jsonify({'message': 'Email and password are required'}), 400
     
@@ -27,11 +26,16 @@ def login():
         print(admin.PasswordHash, password)
         if admin and bcrypt.check_password_hash(admin.PasswordHash, password):
             print("Admin authenticated")
+            key = current_app.config['SECRET_KEY']
+            print(f"\n>>> ENCODING KEY: '{key}' | TYPE: {type(key)} | LENGTH: {len(key)}\n")
             token = jwt.encode({
                 'sub': admin.AdminID,
+                'type': 'admin',
                 'exp': datetime.datetime.utcnow() + datetime.timedelta(hours=1)
             }, current_app.config['SECRET_KEY'], algorithm='HS256')
+            print(f"Generated token: {token}")
             return jsonify({'token': token, "message": "Admin authenticated"}), 200
+        
     else:
         student = Student.query.filter_by(Email=email).first()
         if not student:
@@ -39,8 +43,10 @@ def login():
         if student and bcrypt.check_password_hash(student.PasswordHash, password):
             token = jwt.encode({
                 'sub': student.StudentID,
+                'type': 'student',
                 'exp': datetime.datetime.utcnow() + datetime.timedelta(hours=1)
             }, current_app.config['SECRET_KEY'], algorithm='HS256')
             return jsonify({'token': token, "message": "Student authenticated"}), 200
         
     return jsonify({'message': 'Invalid credentials'}), 401
+

@@ -1,0 +1,154 @@
+/* General Layout */
+.admin-layout {
+  display: flex;
+  height: 100vh;
+  background-color: #f3f4f6;
+}
+
+.main-content {
+  flex: 1;
+  display: flex;
+  flex-direction: column;
+  overflow: hidden;
+}
+
+/* Header within the main content area */
+.content-header {
+  background-color: white;
+  box-shadow: 0 1px 3px rgba(0, 0, 0, 0.1);
+  padding: 1rem 1.5rem;
+  display: flex;
+  justify-content: space-between;
+  align-items: center;
+  border-bottom: 1px solid #e5e7eb;
+}
+
+.content-header__title {
+  font-size: 1.5rem;
+  font-weight: 600;
+  color: #1f2937;
+}
+
+/* Main content scrolling area */
+.content-main {
+  flex: 1;
+  overflow-y: auto;
+  padding: 1.5rem;
+}
+
+/* Common Button Style */
+.btn {
+  display: inline-flex;
+  align-items: center;
+  font-weight: bold;
+  padding: 0.5rem 1rem;
+  border-radius: 0.5rem;
+  border: none;
+  cursor: pointer;
+  transition: background-color 0.2s;
+  text-decoration: none;
+  color: white;
+}
+
+.btn i {
+  margin-right: 0.5rem;
+}
+
+.btn-primary {
+  background-color: #4f46e5; /* indigo-600 */
+}
+
+.btn-primary:hover {
+  background-color: #4338ca; /* indigo-700 */
+}
+
+.btn-danger {
+  background-color: #dc2626; /* red-600 */
+}
+
+.btn-danger:hover {
+  background-color: #b91c1c; /* red-700 */
+}
+
+.btn-secondary {
+  background-color: #e5e7eb; /* gray-200 */
+  color: #1f2937;
+}
+
+.btn-secondary:hover {
+  background-color: #d1d5db; /* gray-300 */
+}
+
+/* Table Styles */
+.data-table-wrapper {
+  background-color: white;
+  box-shadow: 0 4px 6px rgba(0,0,0,0.1);
+  border-radius: 0.5rem;
+  overflow: hidden;
+}
+
+.data-table {
+  width: 100%;
+  border-collapse: collapse;
+}
+
+.data-table th,
+.data-table td {
+  padding: 1rem 1.5rem;
+  text-align: left;
+  border-bottom: 1px solid #e5e7eb;
+}
+
+.data-table th {
+  background-color: #f9fafb;
+  font-size: 0.75rem;
+  font-weight: 500;
+  color: #6b7280;
+  text-transform: uppercase;
+  letter-spacing: 0.05em;
+}
+
+.data-table tr:last-child td {
+  border-bottom: none;
+}
+
+.data-table tr:hover {
+  background-color: #f9fafb;
+}
+
+.data-table .actions {
+  text-align: right;
+  white-space: nowrap;
+}
+
+.data-table .actions button {
+  background: none;
+  border: none;
+  cursor: pointer;
+  padding: 0.25rem;
+  margin: 0 0.5rem;
+  font-size: 1rem;
+}
+.data-table .actions .icon-add { color: #16a34a; }
+.data-table .actions .icon-edit { color: #4f46e5; }
+.data-table .actions .icon-delete { color: #dc2626; }
+
+/* Modal Styles */
+.modal-overlay {
+  position: fixed;
+  inset: 0;
+  background-color: rgba(0, 0, 0, 0.5);
+  display: flex;
+  justify-content: center;
+  align-items: center;
+  z-index: 50;
+}
+
+.modal-content {
+  background-color: white;
+  border-radius: 0.5rem;
+  box-shadow: 0 10px 15px rgba(0, 0, 0, 0.1);
+  padding: 1.5rem;
+  width: 100%;
+  max-width: 500px;
+}

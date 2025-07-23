@@ -1,14 +1,13 @@
 from flask import Blueprint, jsonify, request, current_app
 from app.extension import db
 from app.models import Admin, Attempt, Exam, Subject, Student
-from app.decorators import token_required, roles_required
+from app.decorators import authentication
 from datetime import datetime
 
 student_bp = Blueprint('student', __name__, url_prefix='/student')
 
+@authentication('student')
 @student_bp.route('/dashboard', methods=['GET'])
-@token_required
-@roles_required('student')
 def dashboard(current_user):
     try:
         # Fetch student-specific data
@@ -46,6 +45,7 @@ def dashboard(current_user):
     except Exception as e:
         return jsonify({'message': 'Error fetching dashboard data', 'error': str(e)}), 500
     
+#@authentication('student')
 @student_bp.route('/register', methods=['POST'])
 def register():
     data = request.get_json()
