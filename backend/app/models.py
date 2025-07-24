@@ -20,11 +20,14 @@ class Exam(db.Model):
     TotalDuration = db.Column(db.Integer, nullable=False)
     ExamDate = db.Column(db.DateTime, nullable=False)
     ChapterID = db.Column(db.Integer, db.ForeignKey('chapter.ChapterID', ondelete="CASCADE"), nullable=False)
-    
+    Published = db.Column(db.Boolean, default=False, nullable=False)
+    ExamType = db.Column(db.String(20), nullable=False, default='deadline') # 'deadline' or 'specific_time'
+    StartTime = db.Column(db.DateTime, nullable=True)
+
     questions = db.relationship('Question', backref='exam', lazy=True, cascade="all, delete-orphan")
     attempts = db.relationship('Attempt', backref='exam', lazy=True, cascade="all, delete-orphan")
-    chapter = db.relationship('Chapter', 
-                              backref=db.backref('exams', lazy=True, cascade="all, delete-orphan"), 
+    chapter = db.relationship('Chapter',
+                              backref=db.backref('exams', lazy=True, cascade="all, delete-orphan"),
                               lazy=True)
 
 

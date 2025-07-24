@@ -238,6 +238,26 @@ def delete_chapter(chapter_id):
         return jsonify({'message': 'Error deleting chapter', 'error': str(e)}), 500
 
 #exams CRUD
+#exams CRUD
+@authentication('admin')
+@admin_bp.route('/exams/<int:exam_id>/publish', methods=['PUT'])
+def publish_exam(exam_id):
+    try:
+        exam = Exam.query.get(exam_id)
+        if not exam:
+            return jsonify({'message': 'Exam not found'}), 404
+        
+        # Toggle the published status
+        exam.Published = not exam.Published
+        db.session.commit()
+        
+        return jsonify({
+            'message': f'Exam has been {"published" if exam.Published else "unpublished"}.',
+            'published_status': exam.Published
+        }), 200
+    except Exception as e:
+        db.session.rollback()
+        return jsonify({'message': 'Error updating exam status', 'error': str(e)}), 500
 
 @authentication('admin')
 @admin_bp.route('/exams', methods=['GET'])
@@ -246,7 +266,6 @@ def get_exam():
         chapter_id = request.args.get('chapter_id', type=int)
 
         if chapter_id:
-            # Logic for: GET /admin/exams?chapter_id={{id}}
             exams = Exam.query.filter_by(ChapterID=chapter_id).all()
             return jsonify([{
                 'ExamID': exam.ExamID,
@@ -254,18 +273,19 @@ def get_exam():
                 'TotalMarks': exam.TotalMarks,
                 'TotalQuestions': exam.TotalQuestions,
                 'TotalDuration': exam.TotalDuration,
-                'ExamDate': exam.ExamDate,
-                'ChapterID': exam.ChapterID
+                'ExamDate': exam.ExamDate.strftime("%Y-%m-%d"),
+                'ChapterID': exam.ChapterID,
+                'Published': exam.Published,
+                'ExamType': exam.ExamType,
+                'StartTime': exam.StartTime.strftime("%H:%M") if exam.StartTime else None,
             } for exam in exams]), 200
         else:
-            # Logic for: GET /admin/exams
             all_exams = db.session.query(
                 Exam,
                 Chapter.ChapterName,
                 Subject.SubjectName
-            ).join(Chapter, Exam.ChapterID == Chapter.ChapterID)\
-                .join(Subject, Chapter.SubjectID == Subject.SubjectID).all()
-
+            ).join(Exam.chapter).join(Chapter.subject).all()
+            
             result = []
             for exam, chapter_name, subject_name in all_exams:
                 result.append({
@@ -273,18 +293,22 @@ def get_exam():
                     'ExamName': exam.ExamName,
                     'TotalQuestions': exam.TotalQuestions,
                     'TotalDuration': exam.TotalDuration,
-                    'ExamDate': exam.ExamDate,
+                    'ExamDate': exam.ExamDate.strftime("%Y-%m-%d"),
                     'ChapterName': chapter_name,
-                    'SubjectName': subject_name
+                    'SubjectName': subject_name,
+                    'Published': exam.Published,
+                    'ExamType': exam.ExamType,
+                    'StartTime': exam.StartTime.strftime("%H:%M") if exam.StartTime else None
                 })
             return jsonify(result), 200
+            
     except Exception as e:
+        current_app.logger.error(f"Error fetching exams: {e}", exc_info=True)
         return jsonify({'message': 'Error fetching exams', 'error': str(e)}), 500
 
 @authentication('admin')
 @admin_bp.route('/exams', methods=['POST'])
 def create_exam():
-    # Logic for: POST /admin/exams?chapter_id={{id}}
     chapter_id = request.args.get('chapter_id', type=int)
     if not chapter_id:
         return jsonify({'message': 'chapter_id query parameter is required to create an exam'}), 400
@@ -294,13 +318,22 @@ def create_exam():
         return jsonify({'message': 'Chapter not found'}), 404
 
     try:
+        start_time = None
+        exam_date = datetime.strptime(data.get('ExamDate'), "%Y-%m-%d")
+
+        if data.get('ExamType') == 'specific_time' and data.get('StartTime'):
+            start_time = datetime.strptime(f"{data.get('ExamDate')} {data.get('StartTime')}", "%Y-%m-%d %H:%M")
+
         new_exam = Exam(
             ChapterID=chapter_id,
             ExamName=data.get('ExamName'),
-            TotalMarks=int(data.get('TotalMarks', 0)),
-            TotalQuestions=int(data.get('TotalQuestions', 0)),
+            TotalMarks=0,  # Always initialize to 0
+            TotalQuestions=0,  # Always initialize to 0
             TotalDuration=int(data.get('TotalDuration', 0)),
-            ExamDate=datetime.strptime(data.get('ExamDate'), "%Y-%m-%d")
+            ExamDate=exam_date,
+            Published=data.get('Published', False),
+            ExamType=data.get('ExamType', 'deadline'),
+            StartTime=start_time
         )
         db.session.add(new_exam)
         db.session.commit()
@@ -321,10 +354,24 @@ def update_exam(exam_id):
         if not exam:
             return jsonify({'message': 'Exam not found'}), 404
 
+        if exam.Published:
+            return jsonify({'message': 'Cannot update a published exam'}), 403
+
         exam.ExamName = data.get('ExamName', exam.ExamName)
         exam.TotalDuration = data.get('TotalDuration', exam.TotalDuration)
-        if data.get('ExamDate'):
-            exam.ExamDate = datetime.strptime(data.get('ExamDate')+"T00:00:00", "%Y-%m-%dT%H:%M:%S")
+        
+        if 'ExamDate' in data:
+            exam.ExamDate = datetime.strptime(data['ExamDate'], "%Y-%m-%d")
+
+        exam.Published = data.get('Published', exam.Published)
+        exam.ExamType = data.get('ExamType', exam.ExamType)
+
+        if exam.ExamType == 'specific_time':
+            if 'StartTime' in data and data['StartTime']:
+                exam_date_str = exam.ExamDate.strftime('%Y-%m-%d')
+                exam.StartTime = datetime.strptime(f"{exam_date_str} {data['StartTime']}", "%Y-%m-%d %H:%M")
+        else:
+            exam.StartTime = None
 
         db.session.commit()
         return jsonify({'message': 'Exam updated successfully'}), 200
@@ -332,7 +379,7 @@ def update_exam(exam_id):
     except Exception as e:
         db.session.rollback()
         return jsonify({'message': 'Error updating exam', 'error': str(e)}), 500
-
+        
 @authentication('admin')
 @admin_bp.route('/exams/<int:exam_id>', methods=['DELETE'])
 def delete_exam(exam_id):

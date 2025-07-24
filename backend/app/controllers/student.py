@@ -164,19 +164,21 @@ def get_exams():
     try:
         chapter_id = request.args.get('chapter_id', type=int)
         subject_id = request.args.get('subject_id', type=int)
+
+        # Base query to only fetch published exams
+        query = Exam.query.filter_by(Published=True)
+
         if subject_id:
-            #join subject and chapter to get exams
-            exams = Exam.query.join(Chapter).filter(Chapter.SubjectID == subject_id).all()
-            if not exams:
-                return jsonify({'message': 'No exams found for this subject'}), 404
+            exams = query.join(Chapter).filter(Chapter.SubjectID == subject_id).all()
         elif chapter_id:
-            exams = Exam.query.filter_by(ChapterID=chapter_id).all()
-            if not exams:
-                return jsonify({'message': 'No exams found for this chapter'}), 404
+            exams = query.filter_by(ChapterID=chapter_id).all()
         else:
-            exams = Exam.query.all()
-            if not exams:
-                return jsonify({'message': 'No exams found'}), 404
+            exams = query.all()
+
+        if not exams:
+            # It's better to return an empty list than a 404
+            return jsonify([]), 200
+            
         return jsonify([{
             'exam_id': exam.ExamID,
             'exam_name': exam.ExamName,
@@ -184,7 +186,9 @@ def get_exams():
             'total_questions': exam.TotalQuestions,
             'total_duration': exam.TotalDuration,
             'exam_date': exam.ExamDate.strftime('%Y-%m-%d %H:%M:%S'),
-            'chapter_id': exam.ChapterID
+            'chapter_id': exam.ChapterID,
+            'exam_type': exam.ExamType,
+            'start_time': exam.StartTime.strftime('%Y-%m-%d %H:%M:%S') if exam.StartTime else None
         } for exam in exams]), 200
     except Exception as e:
         return jsonify({'message': 'Error fetching exams', 'error': str(e)}), 500
