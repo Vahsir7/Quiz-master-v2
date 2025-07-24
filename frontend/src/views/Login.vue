@@ -1,41 +1,52 @@
 <template>
-  <div class="min-h-screen bg-gray-100 flex flex-col justify-center items-center p-4">
-    <div class="max-w-md w-full bg-white rounded-lg shadow-xl p-8 space-y-6">
-      <div class="text-center">
-        <h1 class="text-4xl font-extrabold text-gray-800">Welcome to QuizMaster v2</h1>
-        <p class="mt-2 text-gray-600">Please sign in to continue</p>
+  <div class="auth-page">
+    <div class="auth-container">
+      <div class="auth-header">
+        <i class="fas fa-graduation-cap auth-header__icon"></i>
+        <h1 class="auth-header__title">Welcome to QuizMaster v2</h1>
+        <p class="auth-header__subtitle">Please sign in to continue</p>
       </div>
 
-      <form @submit.prevent="handleLogin" class="space-y-6">
-        <div>
-          <label for="userType" class="block text-sm font-medium text-gray-700">Login as</label>
-          <select id="userType" v-model="userType" class="mt-1 block w-full px-3 py-2 bg-white border border-gray-300 rounded-md shadow-sm focus:outline-none focus:ring-indigo-500 focus:border-indigo-500">
-            <option value="student">Student</option>
-            <option value="admin">Admin</option>
-          </select>
-        </div>
+      <div class="auth-card">
+        <form @submit.prevent="handleLogin">
+          <div v-if="error" class="error-message">
+            {{ error }}
+          </div>
+          <div class="form-group">
+            <label for="userType">Login as</label>
+            <select id="userType" v-model="userType" class="form-select">
+              <option value="student">Student</option>
+              <option value="admin">Admin</option>
+            </select>
+          </div>
 
-        <div>
-          <label for="email" class="block text-sm font-medium text-gray-700">Email address</label>
-          <input id="email" type="email" v-model="email" required autocomplete="email" class="mt-1 block w-full px-3 py-2 border border-gray-300 rounded-md shadow-sm placeholder-gray-400 focus:outline-none focus:ring-indigo-500 focus:border-indigo-500">
-        </div>
+          <div class="form-group">
+            <label for="email">Email address</label>
+            <input id="email" type="email" v-model="email" required autocomplete="email" class="form-input">
+          </div>
 
-        <div>
-          <label for="password" class="block text-sm font-medium text-gray-700">Password</label>
-          <input id="password" type="password" v-model="password" required autocomplete="current-password" class="mt-1 block w-full px-3 py-2 border border-gray-300 rounded-md shadow-sm placeholder-gray-400 focus:outline-none focus:ring-indigo-500 focus:border-indigo-500">
-        </div>
+          <div class="form-group">
+            <label for="password">Password</label>
+            <input id="password" type="password" v-model="password" required autocomplete="current-password" class="form-input">
+          </div>
 
-        <div v-if="error" class="text-red-500 text-sm text-center">
-          {{ error }}
-        </div>
+          <div class="form-group">
+            <button type="submit" :disabled="isLoading" class="btn-submit">
+              <span v-if="isLoading">Signing in...</span>
+              <span v-else>Sign in</span>
+            </button>
+          </div>
+        </form>
 
-        <div>
-          <button type="submit" :disabled="isLoading" class="w-full flex justify-center py-3 px-4 border border-transparent rounded-md shadow-sm text-sm font-medium text-white bg-indigo-600 hover:bg-indigo-700 focus:outline-none focus:ring-2 focus:ring-offset-2 focus:ring-indigo-500 disabled:bg-indigo-400">
-            <span v-if="isLoading">Signing in...</span>
-            <span v-else>Sign in</span>
-          </button>
+        <div class="auth-footer">
+          <p>
+            Don't have an account?
+            <router-link to="/register">
+              Register here
+            </router-link>
+          </p>
         </div>
-      </form>
+      </div>
     </div>
   </div>
 </template>
@@ -65,14 +76,13 @@ export default {
           password: this.password,
         };
         const response = await apiService.login(credentials);
-        
+
         localStorage.setItem('token', response.data.token);
         localStorage.setItem('userType', this.userType);
 
         if (this.userType === 'admin') {
           this.$router.push('/admin/dashboard');
         } else {
-          // FIX: Store the student_id from the response
           localStorage.setItem('student_id', response.data.student_id);
           this.$router.push('/student/dashboard');
         }
@@ -90,3 +100,7 @@ export default {
   },
 };
 </script>
+
+<style scoped>
+@import '@/assets/auth.css';
+</style>

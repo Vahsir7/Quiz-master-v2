@@ -4,7 +4,6 @@
     <div v-if="error" class="error-box">{{ error }}</div>
 
     <div v-if="!loading && examDetails" class="quiz-container">
-      <!-- Quiz Header -->
       <div class="quiz-header">
         <h2>{{ examDetails.exam_name }}</h2>
         <div class="timer">
@@ -12,19 +11,23 @@
         </div>
       </div>
 
-      <!-- Progress Bar -->
       <div class="progress-bar">
         <div class="progress" :style="{ width: progressPercentage + '%' }"></div>
       </div>
       <p class="progress-text">Question {{ currentQuestionIndex + 1 }} of {{ questions.length }}</p>
 
-      <!-- Question Card -->
       <div class="question-card">
-        <p class="question-statement">{{ currentQuestion.QuestionStatement }}</p>
+        <div class="question-header-container">
+          <p class="question-statement">{{ currentQuestion.QuestionStatement }}</p>
+          <div class="question-meta">
+            <span class="marks">Marks: {{ currentQuestion.Marks }}</span>
+            <span class="neg-marks">Negative: {{ currentQuestion.NegMarks }}</span>
+          </div>
+        </div>
         <div class="options-grid">
-          <div 
-            v-for="i in 4" 
-            :key="i" 
+          <div
+            v-for="i in 4"
+            :key="i"
             class="option"
             :class="{ 'selected': answers[currentQuestion.QuestionID] === i }"
             @click="selectAnswer(currentQuestion.QuestionID, i)"
@@ -35,10 +38,10 @@
         </div>
       </div>
 
-      <!-- Navigation -->
       <div class="quiz-navigation">
         <button @click="prevQuestion" :disabled="currentQuestionIndex === 0" class="btn-nav">Previous</button>
         <button v-if="currentQuestionIndex < questions.length - 1" @click="nextQuestion" class="btn-nav">Next</button>
+        <button v-if="currentQuestionIndex < questions.length - 1" @click="submitQuiz" class="btn-submit">Finish</button>
         <button v-else @click="submitQuiz" class="btn-submit">Submit Quiz</button>
       </div>
     </div>
@@ -146,7 +149,30 @@ export default {
 .progress { height: 100%; background-color: #3498db; transition: width 0.3s; }
 .progress-text { text-align: right; font-size: 0.9rem; color: #7f8c8d; margin-top: 0.5rem; }
 .question-card { background: white; padding: 2rem; border-radius: 8px; margin-top: 1rem; box-shadow: 0 4px 6px rgba(0,0,0,0.1); }
-.question-statement { font-size: 1.25rem; font-weight: 500; margin-bottom: 1.5rem; }
+.question-header-container {
+  display: flex;
+  justify-content: space-between;
+  align-items: flex-start;
+  margin-bottom: 1.5rem;
+  gap: 1rem;
+}
+.question-statement { font-size: 1.25rem; font-weight: 500; flex-grow: 1; }
+.question-meta {
+  flex-shrink: 0;
+  text-align: right;
+  font-size: 0.9rem;
+  color: #7f8c8d;
+}
+.marks {
+  color: #27ae60;
+  font-weight: bold;
+  display: block;
+}
+.neg-marks {
+  color: #c0392b;
+  font-weight: bold;
+  display: block;
+}
 .options-grid { display: grid; gap: 1rem; }
 .option { padding: 1rem; border: 1px solid #bdc3c7; border-radius: 5px; cursor: pointer; transition: all 0.2s; }
 .option:hover { background-color: #f9f9f9; }

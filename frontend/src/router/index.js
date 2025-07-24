@@ -1,5 +1,6 @@
 import { createRouter, createWebHistory } from 'vue-router';
 import Login from '../views/Login.vue';
+import Register from '../views/Register.vue';
 
 // Admin Views
 import AdminLayout from '../components/AdminLayout.vue'; // The layout is now a route component
@@ -28,20 +29,26 @@ const routes = [
         component: Login,
         meta: { requiresGuest: true }
     },
-    
-    // --- FIX: All admin routes are now nested under a single parent ---
+    {
+        path: '/register',
+        name: 'Register',
+        component: Register,
+        meta: { requiresGuest: true }
+    },
+
+    // Admin Routes
     {
         path: '/admin',
-        component: AdminLayout, // The AdminLayout provides the sidebar and frame
+        component: AdminLayout,
         meta: { requiresAuth: true, role: 'admin' },
         children: [
             {
-                path: 'dashboard', // Path becomes '/admin/dashboard'
+                path: 'dashboard',
                 name: 'AdminDashboard',
                 component: AdminDashboard,
             },
             {
-                path: 'subjects', // Path becomes '/admin/subjects'
+                path: 'subjects',
                 name: 'Subjects',
                 component: Subjects,
             },
@@ -52,8 +59,8 @@ const routes = [
                 props: true,
             },
             {
-                path: 'exams', // Path becomes '/admin/exams'
-                name: 'AdminExams', // Changed name to be unique
+                path: 'exams',
+                name: 'AdminExams',
                 component: AdminExams,
                 props: route => ({ chapterId: route.query.chapterId }),
             },
@@ -64,14 +71,14 @@ const routes = [
                 props: true,
             },
             {
-                path: 'students', // Path becomes '/admin/users'
+                path: 'students',
                 name: 'AdminUsers',
                 component: Students,
             }
         ]
     },
 
-    // --- Student Routes (remain separate) ---
+    // --- Student Routes ---
     {
         path: '/student/dashboard',
         name: 'StudentDashboard',
@@ -115,8 +122,6 @@ const router = createRouter({
 router.beforeEach((to, from, next) => {
   const token = localStorage.getItem('token');
   const userType = localStorage.getItem('userType');
-
-  // FIX: Updated guard logic to correctly check roles on nested routes
   const requiredRole = to.matched.find(record => record.meta.role)?.meta.role;
 
   if (requiredRole) {
@@ -130,7 +135,7 @@ router.beforeEach((to, from, next) => {
     if (userType === 'admin') {
       next('/admin/dashboard');
     } else {
-      next('/student/dashboard'); 
+      next('/student/dashboard');
     }
   } else {
     next();

@@ -6,7 +6,7 @@ from datetime import datetime
 from sqlalchemy.orm import joinedload
 from sqlalchemy import desc
 
-student_bp = Blueprint('student', __name__, url_prefix='/student')
+student_bp = Blueprint('student', __name__)
 
 
 @authentication('student')
@@ -54,7 +54,7 @@ def register():
     try:
         student = Student(
             Name=data.get('name'),
-            Email=data.get('email'),
+            Email=data.get('email').lower(),
             #PasswordHash=data.get('password'),
             DOB=datetime.strptime(data.get('dob'), '%Y-%m-%d'),
             CollegeName=data.get('college_name'),
@@ -169,7 +169,7 @@ def get_exams():
             exams = Exam.query.join(Chapter).filter(Chapter.SubjectID == subject_id).all()
             if not exams:
                 return jsonify({'message': 'No exams found for this subject'}), 404
-        if chapter_id:
+        elif chapter_id:
             exams = Exam.query.filter_by(ChapterID=chapter_id).all()
             if not exams:
                 return jsonify({'message': 'No exams found for this chapter'}), 404
@@ -222,6 +222,8 @@ def start_exam(student_id, exam_id):
             'Option2': q.Option2,
             'Option3': q.Option3,
             'Option4': q.Option4,
+            'Marks': q.Marks,
+            'NegMarks': q.NegMarks
         } for q in exam.questions]
 
         return jsonify({
@@ -246,9 +248,12 @@ def submit_exam(student_id, attempt_id):
     """
     try:
         data = request.get_json()
-        answers = data.get('answers')  # Expected format: {'question_id': 'selected_option', ...}
+        answers = data.get('answers')
+        #print("\n--- SUBMIT EXAM INITIATED ---")
+        #print(f"Attempt ID: {attempt_id}, Student ID: {student_id}")
+        #print(f"Received answers payload: {answers}")
 
-        # The student_id from the URL is now used for authorization.
+
         attempt = Attempt.query.filter_by(AttemptID=attempt_id, StudentID=student_id).first()
         if not attempt:
             return jsonify({'message': 'Attempt not found or unauthorized'}), 404
@@ -257,18 +262,35 @@ def submit_exam(student_id, attempt_id):
 
         total_score = 0
         question_map = {q.QuestionID: q for q in exam.questions}
+        #print(f"Processing {len(answers)} answers for attempt ID: {attempt_id}")
 
-        # Calculate score and save selected answers
-        for question_id_str, selected_option in answers.items():
+
+        for question_id_str, selected_option_str in answers.items():
             question_id = int(question_id_str)
+            
+            if selected_option_str is None:
+                #print(f"\n  Skipping Question ID: {question_id} (not answered)")
+                continue
+                
+            selected_option = int(selected_option_str)
             question = question_map.get(question_id)
+
+            #print(f"\n  Processing Question ID: {question_id}")
+            #print(f"  Student's Answer: {selected_option}, Correct Answer: {question.CorrectOption}")
+
 
             if question:
                 correct = (question.CorrectOption == selected_option)
-                # FIX: Use 'or 0' as a safeguard against NegMarks being None.
                 negative_marks = question.NegMarks or 0
-                score = question.Marks if correct else -negative_marks
-                total_score += score
+
+                if correct:
+                    total_score += question.Marks
+                    #print(f"  Result: CORRECT. Awarding {question.Marks} marks.")
+                else:
+                    total_score -= abs(negative_marks)
+                    #print(f"  Result: INCORRECT. Deducting {abs(negative_marks)} marks.")
+
+                #print(f"  Current Running Score: {total_score}")
 
                 # Store the student's answer
                 selected_answer = SelectedAnswer(
@@ -278,9 +300,11 @@ def submit_exam(student_id, attempt_id):
                 )
                 db.session.add(selected_answer)
 
-        # Update the attempt with the final score
         attempt.Marks = total_score
+        #print(f"\nFinal Calculated Score: {total_score}")
+        #print("Updating attempt record in the database...")
         db.session.commit()
+        #print("--- SUBMIT EXAM COMPLETED ---\n")
 
         return jsonify({
             'message': 'Exam submitted successfully!',
@@ -316,7 +340,9 @@ def get_exam_results(student_id, attempt_id):
                 'Option3': question.Option3,
                 'Option4': question.Option4,
                 'CorrectOption': question.CorrectOption,
-                'YourAnswer': answers_map.get(question.QuestionID, -1) # Use -1 to indicate 'not answered'
+                'YourAnswer': answers_map.get(question.QuestionID, -1),
+                'Marks': question.Marks,
+                'NegMarks': question.NegMarks
             })
 
         return jsonify({

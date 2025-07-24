@@ -4,7 +4,7 @@ from app.models import Admin, Attempt, Exam, Subject, Student, Chapter, Question
 from app.decorators import authentication
 from datetime import datetime
 
-admin_bp = Blueprint('admin', __name__, url_prefix='/admin')
+admin_bp = Blueprint('admin', __name__)
 
 @authentication('admin')
 @admin_bp.route('/dashboard', methods=['GET'])

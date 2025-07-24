@@ -17,9 +17,9 @@
         <div v-for="(question, index) in results.results" :key="index" class="result-card">
           <p class="question-statement">{{ index + 1 }}. {{ question.QuestionStatement }}</p>
           <div class="options-grid">
-            <div 
-              v-for="i in 4" 
-              :key="i" 
+            <div
+              v-for="i in 4"
+              :key="i"
               class="option"
               :class="getOptionClass(question, i)"
             >
@@ -27,6 +27,10 @@
               <i v-if="question.CorrectOption === i" class="fas fa-check-circle"></i>
               <i v-if="question.YourAnswer === i && question.YourAnswer !== question.CorrectOption" class="fas fa-times-circle"></i>
             </div>
+          </div>
+          <div class="question-meta-results">
+            <span class="marks">Marks: {{ question.Marks }}</span>
+            <span class="neg-marks">Negative: {{ question.NegMarks }}</span>
           </div>
         </div>
       </div>
@@ -89,4 +93,23 @@ export default {
 .option.correct { background-color: #e8f5e9; border-color: #a5d6a7; color: #2e7d32; font-weight: bold; }
 .option.incorrect { background-color: #ffebee; border-color: #ef9a9a; color: #c62828; }
 .btn-primary { background-color: #3498db; color: white; padding: 0.75rem 1.5rem; border-radius: 5px; text-decoration: none; font-weight: bold; }
+
+.question-meta-results {
+  text-align: right;
+  font-size: 0.9rem;
+  color: #7f8c8d;
+  margin-top: 1rem;
+  padding-top: 1rem;
+  border-top: 1px solid #ecf0f1;
+}
+.question-meta-results .marks {
+  color: #27ae60;
+  font-weight: bold;
+  margin-left: 1rem;
+}
+.question-meta-results .neg-marks {
+  color: #c0392b;
+  font-weight: bold;
+  margin-left: 1rem;
+}
 </style>
