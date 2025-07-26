@@ -3,6 +3,7 @@
     <header class="content-header">
       <h2 class="content-header__title">Manage Subjects</h2>
       <div class="header-actions">
+        <input type="text" v-model="search" placeholder="Search Subjects..." @input="fetchSubjects" class="form-input w-auto">
         <button @click="openAddModal" class="btn btn-primary">
           <i class="fas fa-plus"></i> Add New Subject
         </button>
@@ -87,6 +88,7 @@ export default {
       loading: true,
       error: null,
       subjects: [],
+      search: '',
       isModalOpen: false,
       isDeleteModalOpen: false,
       modal: {
@@ -107,7 +109,7 @@ export default {
     async fetchSubjects() {
       this.loading = true;
       try {
-        const response = await apiService.getSubjects();
+        const response = await apiService.getSubjects(this.search);
         this.subjects = response.data;
       } catch (err) {
         this.error = 'Failed to load subjects.';

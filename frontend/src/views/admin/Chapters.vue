@@ -3,6 +3,7 @@
     <header class="content-header">
       <h2 class="content-header__title">Manage Chapters</h2>
       <div class="header-actions">
+        <input type="text" v-model="search" placeholder="Search Chapters..." @input="fetchChapters" class="form-input w-auto">
         <button @click="openAddModal" class="btn btn-primary">
           <i class="fas fa-plus mr-2"></i> Add New Chapter
         </button>
@@ -97,6 +98,7 @@ export default {
       loading: true,
       error: null,
       chapters: [],
+      search: '',
       isModalOpen: false,
       isDeleteModalOpen: false,
       modal: {
@@ -117,7 +119,7 @@ export default {
     async fetchChapters() {
       this.loading = true;
       try {
-        const response = await apiService.getChapters(this.subjectId);
+        const response = await apiService.getChapters(this.subjectId, this.search);
         this.chapters = response.data;
       } catch (err) {
         this.error = 'Failed to load chapters for this subject.';

@@ -2,6 +2,9 @@
   <div>
     <header class="content-header">
       <h2 class="content-header__title">Manage Students</h2>
+      <div class="header-actions">
+        <input type="text" v-model="search" placeholder="Search Students..." @input="fetchStudents" class="form-input w-auto">
+      </div>
     </header>
 
     <main class="content-main">
@@ -86,6 +89,7 @@ export default {
       detailsLoading: false,
       error: null,
       students: [],
+      search: '',
       selectedStudent: null,
       studentToDelete: null,
       isDetailsModalOpen: false,
@@ -100,7 +104,7 @@ export default {
       this.loading = true;
       this.error = null;
       try {
-        const response = await apiService.getStudents();
+        const response = await apiService.getStudents(null, this.search);
         this.students = response.data;
       } catch (err) {
         this.error = 'Failed to load students.';

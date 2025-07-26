@@ -55,6 +55,7 @@ def dashboard():
 def get_students():
     try:
         student_id = request.args.get('student_id', type=int)
+        search = request.args.get('search', type=str)
         if student_id:
             # Logic for: GET /admin/students?student_id={{id}}
             student = Student.query.get(student_id)
@@ -69,7 +70,10 @@ def get_students():
                 'Degree': student.Degree
             }), 200
         else:
-            students = Student.query.all()
+            query = Student.query
+            if search:
+                query = query.filter(Student.Name.ilike(f'%{search}%'))
+            students = query.all()
             return jsonify([{'StudentID': student.StudentID,
                             'Name': student.Name,
                             'Email': student.Email}
@@ -153,7 +157,11 @@ def delete_subject(subject_id):
 @admin_bp.route('/subjects', methods=['GET'])
 def get_subjects():
     try:
-        subjects = Subject.query.all()
+        search = request.args.get('search', type=str)
+        query = Subject.query
+        if search:
+            query = query.filter(Subject.SubjectName.ilike(f'%{search}%'))
+        subjects = query.all()
         return jsonify([{'SubjectID': subject.SubjectID,
                          'SubjectName': subject.SubjectName,
                          'Description': subject.Description}
@@ -194,7 +202,11 @@ def create_chapter(subject_id):
 @admin_bp.route('/subjects/<int:subject_id>/chapters', methods=['GET'])
 def get_chapters(subject_id):
     try:
-        chapters = Chapter.query.filter_by(SubjectID=subject_id).all()
+        search = request.args.get('search', type=str)
+        query = Chapter.query.filter_by(SubjectID=subject_id)
+        if search:
+            query = query.filter(Chapter.ChapterName.ilike(f'%{search}%'))
+        chapters = query.all()
         return jsonify([{'ChapterID': chapter.ChapterID,
                          'ChapterName': chapter.ChapterName,
                          'Description': chapter.Description,
@@ -268,44 +280,40 @@ def publish_exam(exam_id):
 def get_exam():
     try:
         chapter_id = request.args.get('chapter_id', type=int)
+        subject_id = request.args.get('subject_id', type=int)
+        search = request.args.get('search', type=str)
 
+        query = db.session.query(
+            Exam,
+            Chapter.ChapterName,
+            Subject.SubjectName
+        ).join(Exam.chapter).join(Chapter.subject)
+
+        if subject_id:
+            query = query.filter(Chapter.SubjectID == subject_id)
         if chapter_id:
-            exams = Exam.query.filter_by(ChapterID=chapter_id).all()
-            return jsonify([{
+            query = query.filter(Exam.ChapterID == chapter_id)
+        if search:
+            query = query.filter(Exam.ExamName.ilike(f'%{search}%'))
+
+        all_exams = query.all()
+
+        result = []
+        for exam, chapter_name, subject_name in all_exams:
+            result.append({
                 'ExamID': exam.ExamID,
                 'ExamName': exam.ExamName,
-                'TotalMarks': exam.TotalMarks,
                 'TotalQuestions': exam.TotalQuestions,
                 'TotalDuration': exam.TotalDuration,
                 'ExamDate': exam.ExamDate.strftime("%Y-%m-%d"),
-                'ChapterID': exam.ChapterID,
+                'ChapterName': chapter_name,
+                'SubjectName': subject_name,
                 'Published': exam.Published,
                 'ExamType': exam.ExamType,
-                'StartTime': exam.StartTime.strftime("%H:%M") if exam.StartTime else None,
-            } for exam in exams]), 200
-        else:
-            all_exams = db.session.query(
-                Exam,
-                Chapter.ChapterName,
-                Subject.SubjectName
-            ).join(Exam.chapter).join(Chapter.subject).all()
-            
-            result = []
-            for exam, chapter_name, subject_name in all_exams:
-                result.append({
-                    'ExamID': exam.ExamID,
-                    'ExamName': exam.ExamName,
-                    'TotalQuestions': exam.TotalQuestions,
-                    'TotalDuration': exam.TotalDuration,
-                    'ExamDate': exam.ExamDate.strftime("%Y-%m-%d"),
-                    'ChapterName': chapter_name,
-                    'SubjectName': subject_name,
-                    'Published': exam.Published,
-                    'ExamType': exam.ExamType,
-                    'StartTime': exam.StartTime.strftime("%H:%M") if exam.StartTime else None
-                })
-            return jsonify(result), 200
-            
+                'StartTime': exam.StartTime.strftime("%H:%M") if exam.StartTime else None
+            })
+        return jsonify(result), 200
+
     except Exception as e:
         current_app.logger.error(f"Error fetching exams: {e}", exc_info=True)
         return jsonify({'message': 'Error fetching exams', 'error': str(e)}), 500

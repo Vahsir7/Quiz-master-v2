@@ -10,6 +10,34 @@
     </header>
 
     <main class="content-main">
+      <div class="filter-bar">
+        <div class="filter-group">
+          <input
+            type="text"
+            v-model="filters.search"
+            placeholder="Search by exam name..."
+            @input="fetchExams"
+            class="search-input"
+          />
+        </div>
+        <div class="filter-group">
+          <select v-model="filters.subject_id" @change="onSubjectChange" class="filter-select">
+            <option value="">All Subjects</option>
+            <option v-for="subject in subjects" :key="subject.SubjectID" :value="subject.SubjectID">
+              {{ subject.SubjectName }}
+            </option>
+          </select>
+        </div>
+        <div class="filter-group">
+          <select v-model="filters.chapter_id" @change="fetchExams" class="filter-select" :disabled="!filters.subject_id">
+            <option value="">All Chapters</option>
+            <option v-for="chapter in chapters" :key="chapter.ChapterID" :value="chapter.ChapterID">
+              {{ chapter.ChapterName }}
+            </option>
+          </select>
+        </div>
+      </div>
+
       <div v-if="loading" class="text-center">Loading exams...</div>
       <div v-if="error" class="error-box">{{ error }}</div>
 
@@ -151,6 +179,11 @@ export default {
       selectedSubject: '',
       loading: true,
       error: null,
+      filters: {
+        search: '',
+        subject_id: '',
+        chapter_id: ''
+      },
       isModalOpen: false,
       isDeleteModalOpen: false,
       modal: {
@@ -171,7 +204,7 @@ export default {
       this.loading = true;
       this.error = null;
       try {
-        const response = await apiService.getExams();
+        const response = await apiService.getExams(this.filters);
         this.exams = response.data;
       } catch (err) {
         this.error = 'Failed to load exams.';
@@ -188,18 +221,26 @@ export default {
         console.error('Failed to load subjects for modal.');
       }
     },
-    async fetchChaptersForSubject() {
-      if (!this.selectedSubject) {
+    async fetchChaptersForSubject(subjectId) {
+      if (!subjectId) {
         this.chapters = [];
         return;
       }
       try {
-        const response = await apiService.getChapters(this.selectedSubject);
+        const response = await apiService.getChapters(subjectId);
         this.chapters = response.data;
-        this.modal.data.ChapterID = '';
       } catch (err) {
         console.error('Failed to load chapters for selected subject.');
       }
+    },
+    onSubjectChange() {
+      this.filters.chapter_id = '';
+      if (this.filters.subject_id) {
+        this.fetchChaptersForSubject(this.filters.subject_id);
+      } else {
+        this.chapters = [];
+      }
+      this.fetchExams();
     },
     resetModal() {
       this.modal = {
@@ -293,3 +334,28 @@ export default {
   },
 };
 </script>
+
+<style scoped>
+.filter-bar {
+  display: flex;
+  flex-wrap: wrap;
+  gap: 1rem;
+  padding: 1rem;
+  background-color: #ffffff;
+  border-radius: 8px;
+  margin-bottom: 1.5rem;
+  box-shadow: 0 2px 4px rgba(0,0,0,0.05);
+}
+
+.filter-group {
+  flex: 1 1 200px;
+}
+
+.search-input, .filter-select {
+  width: 100%;
+  padding: 0.75rem;
+  border: 1px solid #bdc3c7;
+  border-radius: 5px;
+  font-size: 1rem;
+}
+</style>

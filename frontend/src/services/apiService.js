@@ -39,18 +39,18 @@ export default {
   getAdminDashboard() {
     return apiClient.get('/admin/dashboard');
   },
-  getStudents(studentId) {
+  getStudents(studentId, search = '') {
     if (studentId) {
       return apiClient.get(`/admin/students?student_id=${studentId}`);
     } else {
-      return apiClient.get('/admin/students');
+      return apiClient.get(`/admin/students?search=${search}`);
     }
   },
   deleteStudent(studentId) {
     return apiClient.delete(`/admin/students?student_id=${studentId}`);
   },
-  getSubjects(){
-    return apiClient.get('/admin/subjects');
+  getSubjects(search = ''){
+    return apiClient.get(`/admin/subjects?search=${search}`);
   },
   createSubject(subjectData) {
     return apiClient.post('/admin/subjects', subjectData);
@@ -61,8 +61,12 @@ export default {
   deleteSubject(subjectId) {
     return apiClient.delete(`/admin/subjects/${subjectId}`);
   },
-  getChapters(subjectId) {
-    return apiClient.get(`/admin/subjects/${subjectId}/chapters`);
+  getChapters(subjectId, search = '') {
+    let url = `/admin/subjects/${subjectId}/chapters`;
+    if (search) {
+      url += `?search=${search}`;
+    }
+    return apiClient.get(url);
   },
   createChapter(subjectId, chapterData) {
     return apiClient.post(`/admin/subjects/${subjectId}/chapters`, chapterData);
@@ -73,12 +77,8 @@ export default {
   deleteChapter(chapterId) {
     return apiClient.delete(`/admin/chapters/${chapterId}`);
   },
-  getExams(chapterId) {
-    if (chapterId) {
-      return apiClient.get(`/admin/exams?chapter_id=${chapterId}`);
-    } else {
-      return apiClient.get('/admin/exams');
-    }
+  getExams(params) {
+    return apiClient.get('/admin/exams', { params });
   },
   createExam(chapterId, examData) {
     return apiClient.post(`/admin/exams?chapter_id=${chapterId}`, examData);
