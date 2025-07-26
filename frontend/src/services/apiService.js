@@ -1,7 +1,7 @@
 import axios from 'axios';
 
 const apiClient = axios.create({
-  baseURL: 'http://127.0.0.1:5000/api', 
+  baseURL: 'http://127.0.0.1:5000/api',
   headers: {
     'Content-Type': 'application/json',
   },
@@ -10,7 +10,7 @@ const apiClient = axios.create({
 // Add auth token to request headers
 apiClient.interceptors.request.use(
   (config) => {
-    const token = localStorage.getItem('token'); 
+    const token = localStorage.getItem('token');
     if (token) {
       config.headers.Authorization = `Bearer ${token}`;
     }
@@ -86,6 +86,9 @@ export default {
   updateExam(examId, examData) {
     return apiClient.put(`/admin/exams/${examId}`, examData);
   },
+  publishExam(examId) {
+    return apiClient.put(`/admin/exams/${examId}/publish`);
+  },
   deleteExam(examId) {
     return apiClient.delete(`/admin/exams/${examId}`);
   },
@@ -100,6 +103,15 @@ export default {
   },
   deleteQuestion(questionId) {
     return apiClient.delete(`/admin/questions/${questionId}`);
+  },
+   updateExam(examId, examData) {
+    return apiClient.put(`/admin/exams/${examId}`, examData);
+  },
+  publishExam(examId) {
+    return apiClient.put(`/admin/exams/${examId}/publish`);
+  },
+  deleteExam(examId) {
+    return apiClient.delete(`/admin/exams/${examId}`);
   },
 
   // == Student Section ==
@@ -155,5 +167,10 @@ export default {
       return Promise.reject(new Error('Student ID not found. Please log in again.'));
     }
     return apiClient.get(`/student/${studentId}/attempt/${attemptId}/results`);
+  },
+
+  // == Celery Methods ==
+  sendMonthlyReport(studentId) {
+    return apiClient.post(`/admin/students/${studentId}/send-report`);
   },
 };

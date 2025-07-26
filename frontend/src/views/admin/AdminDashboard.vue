@@ -7,7 +7,7 @@
       <main class="content-main">
         <div v-if="loading" class="loading-text">Loading dashboard data...</div>
         <div v-if="error" class="error-box">{{ error }}</div>
-        
+
         <div v-if="!loading && !error">
           <div class="kpi-grid">
             <div class="kpi-card">
@@ -69,17 +69,15 @@
 </template>
 
 <script>
-// (Your <script> section remains exactly the same)
 import apiService from '@/services/apiService';
 import { Bar, Doughnut } from 'vue-chartjs';
 import { Chart as ChartJS, Title, Tooltip, Legend, BarElement, CategoryScale, LinearScale, ArcElement } from 'chart.js';
-import AdminNavbar from '@/components/AdminNavbar.vue';
 
 ChartJS.register(Title, Tooltip, Legend, BarElement, CategoryScale, LinearScale, ArcElement);
 
 export default {
   name: 'AdminDashboard',
-  components: { Bar, Doughnut, AdminNavbar },
+  components: { Bar, Doughnut },
   data() {
     return {
       loading: true,

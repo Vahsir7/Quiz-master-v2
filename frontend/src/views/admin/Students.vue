@@ -25,6 +25,9 @@
                 <button @click="openDetailsModal(student)" class="icon-edit" title="View More Details">
                   <i class="fas fa-eye"></i>
                 </button>
+                <button @click="sendMonthlyReport(student)" class="icon-publish" title="Send Monthly Report">
+                  <i class="fas fa-paper-plane"></i>
+                </button>
                 <button @click="openDeleteModal(student)" class="icon-delete" title="Delete Student">
                   <i class="fas fa-trash-alt"></i>
                 </button>
@@ -141,6 +144,14 @@ export default {
         console.error(err);
       } finally {
         this.closeDeleteModal();
+      }
+    },
+    async sendMonthlyReport(student) {
+      try {
+        await apiService.sendMonthlyReport(student.StudentID);
+        alert(`A monthly report is being generated for ${student.Name}.`);
+      } catch (err) {
+        this.error = `Failed to trigger report for ${student.Name}.`;
       }
     },
   },

@@ -20,6 +20,7 @@
               <th>Exam Name</th>
               <th>Subject</th>
               <th>Chapter</th>
+              <th>Published</th>
               <th>Questions</th>
               <th>Duration</th>
               <th>Exam Date</th>
@@ -31,23 +32,31 @@
               <td class="font-medium">{{ exam.ExamName }}</td>
               <td>{{ exam.SubjectName }}</td>
               <td>{{ exam.ChapterName }}</td>
+              <td>
+                <span :class="exam.Published ? 'text-green-500' : 'text-red-500'">
+                  {{ exam.Published ? 'Yes' : 'No' }}
+                </span>
+              </td>
               <td>{{ exam.TotalQuestions }}</td>
               <td>{{ exam.TotalDuration }} mins</td>
               <td>{{ new Date(exam.ExamDate).toLocaleDateString() }}</td>
               <td class="actions">
+                <button @click="togglePublish(exam)" class="icon-publish" :title="exam.Published ? 'Unpublish Exam' : 'Publish Exam'">
+                  <i :class="exam.Published ? 'fas fa-eye-slash' : 'fas fa-eye'"></i>
+                </button>
                 <button @click="manageQuestions(exam)" class="icon-edit" title="Manage Questions">
                   <i class="fas fa-list-ul"></i>
                 </button>
-                <button @click="openEditModal(exam)" class="icon-edit" title="Edit Exam">
+                <button @click="openEditModal(exam)" class="icon-edit" title="Edit Exam" :disabled="exam.Published">
                   <i class="fas fa-pencil-alt"></i>
                 </button>
-                <button @click="openDeleteModal(exam)" class="icon-delete" title="Delete Exam">
+                <button @click="openDeleteModal(exam)" class="icon-delete" title="Delete Exam" :disabled="exam.Published">
                   <i class="fas fa-trash-alt"></i>
                 </button>
               </td>
             </tr>
             <tr v-if="exams.length === 0">
-              <td colspan="7" class="text-center text-gray-500 py-4">No exams found.</td>
+              <td colspan="8" class="text-center text-gray-500 py-4">No exams found.</td>
             </tr>
           </tbody>
         </table>
@@ -90,6 +99,21 @@
               <label class="block text-sm font-medium">Exam Date</label>
               <input type="date" v-model="modal.data.ExamDate" class="mt-1 block w-full border-gray-300 rounded-md shadow-sm">
             </div>
+             <div>
+              <label class="block text-sm font-medium">Exam Type</label>
+              <select v-model="modal.data.ExamType" class="mt-1 block w-full border-gray-300 rounded-md shadow-sm">
+                <option value="deadline">Deadline</option>
+                <option value="specific_time">Specific Time</option>
+              </select>
+            </div>
+            <div v-if="modal.data.ExamType === 'specific_time'">
+              <label class="block text-sm font-medium">Start Time</label>
+              <input type="time" v-model="modal.data.StartTime" class="mt-1 block w-full border-gray-300 rounded-md shadow-sm">
+            </div>
+            <div>
+              <label class="block text-sm font-medium">Published</label>
+              <input type="checkbox" v-model="modal.data.Published" class="mt-1">
+            </div>
             <div class="flex justify-end space-x-4 pt-4">
               <button type="button" @click="closeModal" class="btn btn-secondary">Cancel</button>
               <button type="submit" class="btn btn-primary">Save Exam</button>
@@ -114,7 +138,6 @@
     </main>
   </div>
 </template>
-
 <script>
 import apiService from '@/services/apiService';
 
@@ -132,7 +155,9 @@ export default {
       isDeleteModalOpen: false,
       modal: {
         isEditMode: false,
-        data: {},
+        data: {
+            ExamType: 'deadline',
+        },
       },
       examToDelete: null,
     };
@@ -171,7 +196,6 @@ export default {
       try {
         const response = await apiService.getChapters(this.selectedSubject);
         this.chapters = response.data;
-        // Reset chapter selection if the subject changes
         this.modal.data.ChapterID = '';
       } catch (err) {
         console.error('Failed to load chapters for selected subject.');
@@ -185,6 +209,9 @@ export default {
           TotalDuration: 60,
           ExamDate: new Date().toISOString().split('T')[0],
           ChapterID: '',
+          ExamType: 'deadline',
+          StartTime: '',
+          Published: false,
         },
       };
       this.selectedSubject = '';
@@ -240,6 +267,15 @@ export default {
         this.closeDeleteModal();
       } catch (err) {
         this.error = 'Failed to delete exam.';
+        console.error(err);
+      }
+    },
+    async togglePublish(exam) {
+      try {
+        await apiService.publishExam(exam.ExamID);
+        exam.Published = !exam.Published;
+      } catch (err) {
+        this.error = `Failed to ${exam.Published ? 'unpublish' : 'publish'} exam.`;
         console.error(err);
       }
     },

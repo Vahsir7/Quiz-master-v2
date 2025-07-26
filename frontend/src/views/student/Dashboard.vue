@@ -9,7 +9,6 @@
     <div v-if="error" class="error-box">{{ error }}</div>
 
     <div v-if="!loading && !error">
-      <!-- Statistics Grid -->
       <div class="stats-grid">
         <div class="stat-card">
           <i class="fas fa-file-alt stat-icon blue"></i>
@@ -32,22 +31,32 @@
             <p>{{ (stats.average_score || 0).toFixed(2) }}%</p>
           </div>
         </div>
+         <div class="stat-card">
+          <i class="fas fa-trophy stat-icon orange"></i>
+          <div class="stat-info">
+            <h3>Highest Score</h3>
+            <p>{{ stats.highest_score || 0 }}</p>
+          </div>
+        </div>
       </div>
 
-      <!-- FIX: Replaced the simple list with a grid for charts -->
       <div class="charts-grid">
         <div class="chart-card">
           <h3>Attempts per Subject</h3>
           <div class="chart-wrapper">
-            <!-- Render the Bar chart if data is available -->
             <Bar v-if="chartData.attempts.labels.length" :data="chartData.attempts" :options="chartOptions" />
           </div>
         </div>
         <div class="chart-card">
           <h3>Average Score per Subject (%)</h3>
           <div class="chart-wrapper">
-            <!-- Render the Doughnut chart if data is available -->
             <Doughnut v-if="chartData.scores.labels.length" :data="chartData.scores" :options="chartOptions" />
+          </div>
+        </div>
+        <div class="chart-card">
+          <h3>Performance Over Time (Score/Total)</h3>
+          <div class="chart-wrapper">
+            <Line v-if="chartData.performance.labels.length" :data="chartData.performance" :options="chartOptions" />
           </div>
         </div>
       </div>
@@ -58,17 +67,14 @@
 <script>
 import apiService from '@/services/apiService';
 import StudentLayout from '@/components/StudentLayout.vue';
-// FIX: Import Chart.js components
-import { Bar, Doughnut } from 'vue-chartjs';
-import { Chart as ChartJS, Title, Tooltip, Legend, BarElement, CategoryScale, LinearScale, ArcElement } from 'chart.js';
+import { Bar, Doughnut, Line } from 'vue-chartjs';
+import { Chart as ChartJS, Title, Tooltip, Legend, BarElement, CategoryScale, LinearScale, ArcElement, PointElement, LineElement } from 'chart.js';
 
-// FIX: Register Chart.js components
-ChartJS.register(Title, Tooltip, Legend, BarElement, CategoryScale, LinearScale, ArcElement);
+ChartJS.register(Title, Tooltip, Legend, BarElement, CategoryScale, LinearScale, ArcElement, PointElement, LineElement);
 
 export default {
   name: 'StudentDashboard',
-  // FIX: Add chart components
-  components: { StudentLayout, Bar, Doughnut },
+  components: { StudentLayout, Bar, Doughnut, Line },
   data() {
     return {
       stats: {
@@ -76,13 +82,15 @@ export default {
         average_scores: [],
         average_score: 0,
         total_exams: 0,
+        highest_score: 0,
+        attempts_over_time: [],
       },
       loading: true,
       error: null,
-      // FIX: Add data properties for charts
       chartData: {
         attempts: { labels: [], datasets: [] },
         scores: { labels: [], datasets: [] },
+        performance: { labels: [], datasets: [] }
       },
       chartOptions: {
         responsive: true,
@@ -105,7 +113,6 @@ export default {
       try {
         const response = await apiService.getStudentDashboard();
         this.stats = response.data;
-        // FIX: Call method to prepare chart data after fetching
         this.prepareChartData();
       } catch (err) {
         this.error = 'Failed to load dashboard data.';
@@ -114,9 +121,7 @@ export default {
         this.loading = false;
       }
     },
-    // FIX: Add a new method to format API data for Chart.js
     prepareChartData() {
-      // Data for Attempts Bar Chart
       this.chartData.attempts = {
         labels: this.stats.total_attempts.map(item => item.subject),
         datasets: [{
@@ -127,7 +132,6 @@ export default {
         }]
       };
 
-      // Data for Scores Doughnut Chart
       this.chartData.scores = {
         labels: this.stats.average_scores.map(item => item.subject),
         datasets: [{
@@ -136,78 +140,17 @@ export default {
           data: this.stats.average_scores.map(item => item.average_score.toFixed(2))
         }]
       };
+      
+      this.chartData.performance = {
+        labels: this.stats.attempts_over_time.map((_, index) => `Attempt ${index + 1}`),
+        datasets: [{
+          label: 'Score per Attempt',
+          backgroundColor: '#ef4444',
+          borderColor: '#ef4444',
+          data: this.stats.attempts_over_time.map(item => item.score)
+        }]
+      };
     },
   },
 };
 </script>
-
-<style scoped>
-.dashboard-header { margin-bottom: 2rem; }
-.dashboard-header h2 { font-size: 2rem; font-weight: bold; color: #2c3e50; }
-.dashboard-header p { font-size: 1rem; color: #7f8c8d; }
-.error-box { background-color: #e74c3c; color: white; padding: 1rem; border-radius: 5px; margin: 1rem 0; }
-
-.stats-grid {
-  display: grid;
-  grid-template-columns: repeat(auto-fit, minmax(250px, 1fr));
-  gap: 1.5rem;
-  margin-bottom: 3rem;
-}
-
-.stat-card {
-  background-color: #ffffff;
-  border-radius: 8px;
-  padding: 1.5rem;
-  display: flex;
-  align-items: center;
-  box-shadow: 0 4px 6px rgba(0,0,0,0.05);
-}
-
-.stat-icon {
-  font-size: 2rem;
-  padding: 1rem;
-  border-radius: 50%;
-  color: white;
-  margin-right: 1rem;
-}
-.stat-icon.blue { background-color: #3498db; }
-.stat-icon.green { background-color: #2ecc71; }
-.stat-icon.yellow { background-color: #f1c40f; }
-
-.stat-info h3 {
-  font-size: 0.9rem;
-  color: #7f8c8d;
-  font-weight: 500;
-}
-.stat-info p {
-  font-size: 1.75rem;
-  font-weight: bold;
-  color: #2c3e50;
-}
-
-/* FIX: Added styles for the charts section */
-.charts-grid {
-  display: grid;
-  grid-template-columns: repeat(auto-fit, minmax(300px, 1fr));
-  gap: 1.5rem;
-}
-
-.chart-card {
-  background-color: #ffffff;
-  border-radius: 8px;
-  padding: 1.5rem;
-  box-shadow: 0 4px 6px rgba(0,0,0,0.05);
-}
-
-.chart-card h3 {
-  font-size: 1.25rem;
-  font-weight: 600;
-  color: #34495e;
-  margin-bottom: 1rem;
-}
-
-.chart-wrapper {
-  height: 300px;
-  position: relative;
-}
-</style>

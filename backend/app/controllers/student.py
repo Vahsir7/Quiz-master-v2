@@ -13,38 +13,54 @@ student_bp = Blueprint('student', __name__)
 @student_bp.route('/<int:student_id>/dashboard', methods=['GET'])
 def dashboard(student_id):
     try:
-        # Get the current user from the 'g' object.
-
+        # Total attempts and average scores per subject
         total_attempts = db.session.query(
             db.func.count(Attempt.AttemptID).label('total_attempts'),
             Subject.SubjectName.label('subject_name')
         ).join(Attempt.exam).join(Exam.chapter).join(Chapter.subject).filter(Attempt.StudentID == student_id).group_by(Subject.SubjectName).all()
 
+        # Average Scores per Subject
         average_scores = db.session.query(
             db.func.avg(Attempt.Marks).label('average_score'),
             Subject.SubjectName.label('subject_name')
         ).join(Attempt.exam).join(Exam.chapter).join(Chapter.subject).filter(Attempt.StudentID == student_id).group_by(Subject.SubjectName).all()
 
+        # Total Exams Attempted
         total_exams = db.session.query(
             db.func.count(Attempt.AttemptID)
         ).filter(Attempt.StudentID == student_id).scalar()
 
+        # Average Score across all attempts
         average_score = db.session.query(
             db.func.avg(Attempt.Marks).label('average_score')
         ).filter(Attempt.StudentID == student_id).scalar()
         if average_score is None:
             average_score = 0
 
+        # Fetch attempts over time
+        attempts_over_time = db.session.query(
+            Attempt.Marks,
+            Attempt.TotalMarks
+        ).filter(Attempt.StudentID == student_id).order_by(Attempt.AttemptDate).all()
+
+        # Highest Score
+        highest_score_attempt = db.session.query(Attempt).filter(
+            Attempt.StudentID == student_id
+        ).order_by(db.desc(Attempt.Marks)).first()
+        highest_score = highest_score_attempt.Marks if highest_score_attempt else 0
+
         return jsonify({
             'total_attempts': [{'subject': row.subject_name, 'count': row.total_attempts} for row in total_attempts],
             'average_scores': [{'subject': row.subject_name, 'average_score': row.average_score} for row in average_scores],
             'average_score': average_score,
-            'total_exams': total_exams or 0
+            'total_exams': total_exams or 0,
+            'attempts_over_time': [{'score': row.Marks, 'total_marks': row.TotalMarks} for row in attempts_over_time],
+            'highest_score': highest_score
         }), 200
 
     except Exception as e:
         return jsonify({'message': 'Error fetching dashboard data', 'error': str(e)}), 500
-
+    
 #@authentication('student')
 @student_bp.route('/register', methods=['POST'])
 def register():

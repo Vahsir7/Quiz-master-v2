@@ -1,24 +1,39 @@
 import os
-
 from flask import Flask
 from .config import Config
 from flask_cors import CORS
-from dotenv import load_dotenv
 
 def create_app(config_class=Config):
-    """Create and configure an instance of the Flask application."""
-    load_dotenv()  
-    #print("SECRET_KEY from .env:", os.getenv('SECRET_KEY')) 
-    from .extension import db, bcrypt, migrate
+    from .extension import db, bcrypt, migrate, mail, celery
     app = Flask(__name__)
     app.config.from_object(config_class)
 
+    # Initialize extensions
     CORS(app)
-
     db.init_app(app)
     bcrypt.init_app(app)
+    mail.init_app(app)
     migrate.init_app(app, db)
     
+    # Update celery config
+    celery.conf.update(
+        broker_url=app.config['CELERY_BROKER_URL'],
+        result_backend=app.config['CELERY_RESULT_BACKEND'],
+    )
+    celery.conf.beat_schedule = {
+        'send-daily-reminders': {
+            'task': 'app.celery_tasks.send_daily_reminders',
+            'schedule': timedelta(days=1),
+        },
+    }
+
+    class ContextTask(celery.Task):
+        def __call__(self, *args, **kwargs):
+            with app.app_context():
+                return self.run(*args, **kwargs)
+    celery.Task = ContextTask
+
+    # Register blueprints
     from .controllers.auth import auth_bp
     app.register_blueprint(auth_bp, url_prefix='/api/auth')
     from .controllers.admin import admin_bp
@@ -31,7 +46,6 @@ def create_app(config_class=Config):
         db.create_all()
         admin = models.Admin.query.get(1)
         if not admin:
-            #print("Creating admin user...")
             admin = models.Admin(
                 AdminID=1,
                 Name=os.getenv('Admin_Username'),
@@ -41,9 +55,5 @@ def create_app(config_class=Config):
             admin.set_password(password)
             db.session.add(admin)
             db.session.commit()
-            #print("Admin created successfully.")
-        #else:
-            #print("Admin already exists.")
 
     return app
-

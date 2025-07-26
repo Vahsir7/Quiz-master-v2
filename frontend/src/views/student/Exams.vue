@@ -5,12 +5,11 @@
       <p>Find a quiz to test your knowledge.</p>
     </div>
 
-    <!-- Search and Filter Form -->
     <div class="filter-bar">
       <div class="filter-group">
-        <input 
-          type="text" 
-          v-model="filters.searchQuery" 
+        <input
+          type="text"
+          v-model="filters.searchQuery"
           placeholder="Search by exam name..."
           class="search-input"
         />
@@ -40,7 +39,6 @@
     <div v-if="loading" class="text-center">Loading exams...</div>
     <div v-if="error" class="error-box">{{ error }}</div>
 
-    <!-- Exams Table -->
     <div v-if="!loading" class="table-wrapper">
       <table class="min-w-full divide-y divide-gray-200">
         <thead class="bg-gray-50">
@@ -49,7 +47,7 @@
             <th>Total Marks</th>
             <th>Questions</th>
             <th>Duration</th>
-            <th>Deadline</th>
+            <th>Availability</th>
             <th>Action</th>
           </tr>
         </thead>
@@ -59,9 +57,18 @@
             <td>{{ exam.total_marks }}</td>
             <td>{{ exam.total_questions }}</td>
             <td>{{ exam.total_duration }} mins</td>
-            <td>{{ new Date(exam.exam_date).toLocaleDateString() }}</td>
             <td>
-              <button @click="openStartModal(exam)" v-if="isExamActive(exam.exam_date)" class="btn-start-quiz">Start</button>
+              <div v-if="exam.exam_type === 'specific_time' && exam.start_time">
+                <p class="font-semibold">{{ new Date(exam.start_time).toLocaleTimeString([], { hour: '2-digit', minute: '2-digit' }) }}</p>
+                <p class="text-xs text-gray-500">{{ new Date(exam.start_time).toLocaleDateString() }}</p>
+              </div>
+              <div v-else>
+                <p class="font-semibold">Deadline</p>
+                <p class="text-xs text-gray-500">{{ new Date(exam.exam_date).toLocaleDateString() }}</p>
+              </div>
+            </td>
+            <td>
+              <button @click="openStartModal(exam)" v-if="isAttemptable(exam)" class="btn-start-quiz">Start</button>
               <span v-else class="text-red-500 font-semibold">Over</span>
             </td>
           </tr>
@@ -72,7 +79,6 @@
       </table>
     </div>
 
-    <!-- Start Exam Confirmation Modal -->
     <div v-if="isStartModalOpen" class="modal-overlay">
       <div class="modal-content text-center">
         <div class="mx-auto flex items-center justify-center h-12 w-12 rounded-full bg-blue-100">
@@ -130,11 +136,11 @@ export default {
 
       if (this.filters.searchQuery) {
         const lowerCaseSearch = this.filters.searchQuery.toLowerCase();
-        exams = exams.filter(exam => 
+        exams = exams.filter(exam =>
           exam.exam_name.toLowerCase().includes(lowerCaseSearch)
         );
       }
-      
+
       const chapterIdsInSubject = new Set(this.availableChapters.map(c => c.chapter_id));
 
       if (this.filters.subject !== 'All') {
@@ -145,12 +151,11 @@ export default {
         exams = exams.filter(exam => exam.chapter_id === this.filters.chapter);
       }
 
-      const today = new Date();
-      today.setHours(0, 0, 0, 0);
+      const now = new Date();
       if (this.filters.past) {
-        exams = exams.filter(exam => new Date(exam.exam_date) < today);
+        exams = exams.filter(exam => !this.isAvailable(exam, now));
       } else {
-        exams = exams.filter(exam => new Date(exam.exam_date) >= today);
+        exams = exams.filter(exam => this.isAvailable(exam, now));
       }
 
       return exams;
@@ -172,7 +177,7 @@ export default {
         const [examsRes, subjectsRes, chaptersRes] = await Promise.all([
           apiService.getStudentExams({}),
           apiService.getStudentSubjects(),
-          apiService.getStudentChapters() 
+          apiService.getStudentChapters()
         ]);
         this.exams = examsRes.data;
         this.subjects = subjectsRes.data;
@@ -184,10 +189,29 @@ export default {
         this.loading = false;
       }
     },
-    isExamActive(deadline) {
-      const today = new Date();
-      today.setHours(0, 0, 0, 0);
-      return new Date(deadline) >= today;
+    isAvailable(exam, now) {
+      if (exam.exam_type === 'specific_time') {
+        if (!exam.start_time) return false;
+        const endTime = new Date(new Date(exam.start_time).getTime() + exam.total_duration * 60000);
+        return now <= endTime;
+      } else { // deadline
+        const deadlineDate = new Date(exam.exam_date);
+        deadlineDate.setHours(23, 59, 59, 999);
+        return now <= deadlineDate;
+      }
+    },
+    isAttemptable(exam) {
+      const now = new Date();
+      if (exam.exam_type === 'specific_time') {
+          if (!exam.start_time) return false;
+          const startTime = new Date(exam.start_time);
+          const endTime = new Date(startTime.getTime() + exam.total_duration * 60000);
+          return now >= startTime && now <= endTime;
+      } else { // 'deadline'
+          const deadlineDate = new Date(exam.exam_date);
+          deadlineDate.setHours(23, 59, 59, 999);
+          return now <= deadlineDate;
+      }
     },
     openStartModal(exam) {
       this.examToStart = exam;
@@ -197,14 +221,11 @@ export default {
       this.isStartModalOpen = false;
       this.examToStart = null;
     },
-    // FIX: This method now correctly navigates to the quiz page.
     confirmStartExam() {
       if (!this.examToStart) return;
-      // Navigate to the 'StudentQuiz' route, passing the examId as a parameter.
-      // The Quiz.vue component will then handle the API call to start the exam attempt.
-      this.$router.push({ 
-        name: 'StudentQuiz', 
-        params: { examId: this.examToStart.exam_id } 
+      this.$router.push({
+        name: 'StudentQuiz',
+        params: { examId: this.examToStart.exam_id }
       });
     }
   }
@@ -289,7 +310,6 @@ td {
   background-color: #27ae60;
 }
 
-/* Modal styles from admin.css for consistency */
 .modal-overlay {
   position: fixed;
   inset: 0;

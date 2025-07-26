@@ -3,6 +3,7 @@ from app.extension import db
 from app.models import Admin, Attempt, Exam, Subject, Student, Chapter, Question
 from app.decorators import authentication
 from datetime import datetime
+from app.celery_tasks import send_daily_reminders, generate_monthly_report
 
 admin_bp = Blueprint('admin', __name__)
 
@@ -237,7 +238,6 @@ def delete_chapter(chapter_id):
         db.session.rollback()
         return jsonify({'message': 'Error deleting chapter', 'error': str(e)}), 500
 
-#exams CRUD
 #exams CRUD
 @authentication('admin')
 @admin_bp.route('/exams/<int:exam_id>/publish', methods=['PUT'])
@@ -501,3 +501,14 @@ def delete_question(question_id):
     except Exception as e:
         db.session.rollback()
         return jsonify({'message': 'Error deleting question', 'error': str(e)}), 500
+    
+#celery tasks
+@authentication('admin')
+@admin_bp.route('/students/<int:student_id>/send-report', methods=['POST'])
+def send_report(student_id):
+    try:
+        generate_monthly_report.delay(student_id)
+        return jsonify({'message': 'Monthly report generation has been triggered.'}), 202
+    except Exception as e:
+        return jsonify({'message': 'Error triggering report generation', 'error': str(e)}), 500
+

@@ -152,3 +152,16 @@
   width: 100%;
   max-width: 500px;
 }
+
+.data-table .actions button {
+  background: none;
+  border: none;
+  cursor: pointer;
+  padding: 0.25rem;
+  margin: 0 0.5rem;
+  font-size: 1rem;
+}
+.data-table .actions .icon-add { color: #16a34a; }
+.data-table .actions .icon-edit { color: #4f46e5; }
+.data-table .actions .icon-delete { color: #dc2626; }
+.data-table .actions .icon-publish { color: #f59e0b; } /* Orange for publish */
