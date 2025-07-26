@@ -3,7 +3,7 @@ from app.extension import db
 from app.models import Admin, Attempt, Exam, Subject, Student, Chapter, Question
 from app.decorators import authentication
 from datetime import datetime
-from app.celery_tasks import send_daily_reminders, generate_monthly_report
+from app.celery_tasks import send_daily_reminders, generate_monthly_report, send_new_exam_notification, generate_exam_report_for_student
 
 admin_bp = Blueprint('admin', __name__)
 
@@ -247,8 +247,12 @@ def publish_exam(exam_id):
         if not exam:
             return jsonify({'message': 'Exam not found'}), 404
         
-        # Toggle the published status
         exam.Published = not exam.Published
+        
+        # If the exam is being published, trigger the notification task
+        if exam.Published:
+            send_new_exam_notification.delay(exam.ExamID)
+            
         db.session.commit()
         
         return jsonify({
@@ -505,10 +509,16 @@ def delete_question(question_id):
 #celery tasks
 @authentication('admin')
 @admin_bp.route('/students/<int:student_id>/send-report', methods=['POST'])
-def send_report(student_id):
+def send_exam_report(student_id):
     try:
-        generate_monthly_report.delay(student_id)
-        return jsonify({'message': 'Monthly report generation has been triggered.'}), 202
-    except Exception as e:
-        return jsonify({'message': 'Error triggering report generation', 'error': str(e)}), 500
+        student = Student.query.get(student_id)
+        if not student:
+            return jsonify({'message': 'Student not found'}), 404
 
+        print(student)
+        generate_exam_report_for_student.delay(student_id)
+
+        return jsonify({'message': 'Exam report generation has been triggered.'}), 202
+    except Exception as e:
+        print(f"Error triggering report generation: {e}")
+        return jsonify({'message': 'Error triggering report generation', 'error': str(e)}), 500
