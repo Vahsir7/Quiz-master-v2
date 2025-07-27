@@ -4,12 +4,16 @@
       <h2 class="content-header__title">Manage Students</h2>
       <div class="header-actions">
         <input type="text" v-model="search" placeholder="Search Students..." @input="fetchStudents" class="form-input w-auto">
+        <button @click="handleExport" class="btn btn-primary">
+          <i class="fas fa-file-export"></i> Export All to CSV
+        </button>
       </div>
     </header>
 
     <main class="content-main">
       <div v-if="loading" class="text-center">Loading students...</div>
       <div v-if="error" class="text-center text-red-500 p-4 bg-red-100 rounded-md">{{ error }}</div>
+      <div v-if="exportMessage" class="success-box">{{ exportMessage }}</div>
 
       <div v-if="!loading && !error" class="data-table-wrapper">
         <table class="data-table">
@@ -94,6 +98,7 @@ export default {
       studentToDelete: null,
       isDetailsModalOpen: false,
       isDeleteModalOpen: false,
+      exportMessage: '',
     };
   },
   mounted() {
@@ -158,6 +163,25 @@ export default {
         this.error = `Failed to trigger report for ${student.Name}.`;
       }
     },
+    async handleExport() {
+      this.exportMessage = '';
+      this.error = null;
+      try {
+        const response = await apiService.exportAllStudentData();
+        this.exportMessage = response.data.message;
+      } catch (err) {
+        this.error = 'Failed to start the export process.';
+      }
+    },
   },
 };
 </script>
+<style scoped>
+.success-box {
+  background-color: #2ecc71;
+  color: white;
+  padding: 1rem;
+  border-radius: 5px;
+  margin: 1rem 0;
+}
+</style>

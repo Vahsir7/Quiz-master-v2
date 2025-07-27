@@ -47,35 +47,41 @@
 
       <div v-if="isModalOpen" class="modal-overlay">
           <div class="modal-content">
-              <h3 class="text-xl font-semibold mb-4">{{ modal.isEditMode ? 'Edit Chapter' : 'Add New Chapter' }}</h3>
-              <form @submit.prevent="handleFormSubmit">
-                  <div class="mb-4">
-                      <label for="chapterName" class="block text-sm font-medium text-gray-700">Chapter Name</label>
-                      <input type="text" id="chapterName" v-model="modal.data.ChapterName" class="mt-1 block w-full border-gray-300 rounded-md shadow-sm" required>
+            <form @submit.prevent="handleFormSubmit">
+              <div class="modal-header">
+                {{ modal.isEditMode ? 'Edit Chapter' : 'Add New Chapter' }}
+              </div>
+              <div class="modal-body">
+                  <div class="form-group">
+                      <label for="chapterName">Chapter Name</label>
+                      <input type="text" id="chapterName" v-model="modal.data.ChapterName" class="form-input" required>
                   </div>
-                  <div class="mb-4">
-                      <label for="chapterDescription" class="block text-sm font-medium text-gray-700">Description</label>
-                      <textarea id="chapterDescription" v-model="modal.data.Description" rows="3" class="mt-1 block w-full border-gray-300 rounded-md shadow-sm"></textarea>
+                  <div class="form-group">
+                      <label for="chapterDescription">Description</label>
+                      <textarea id="chapterDescription" v-model="modal.data.Description" rows="3" class="form-textarea"></textarea>
                   </div>
-                  <div class="flex justify-end space-x-4">
-                      <button type="button" @click="closeModal" class="btn btn-secondary">Cancel</button>
-                      <button type="submit" class="btn btn-primary">{{ modal.isEditMode ? 'Update' : 'Create' }}</button>
-                  </div>
-              </form>
+              </div>
+              <div class="modal-footer">
+                  <button type="button" @click="closeModal" class="btn btn-secondary">Cancel</button>
+                  <button type="submit" class="btn btn-primary">{{ modal.isEditMode ? 'Update' : 'Create' }}</button>
+              </div>
+            </form>
           </div>
       </div>
 
       <div v-if="isDeleteModalOpen" class="modal-overlay">
           <div class="modal-content text-center">
+            <div class="modal-body">
               <div class="mx-auto flex items-center justify-center h-12 w-12 rounded-full bg-red-100">
                   <i class="fas fa-exclamation-triangle text-red-600 text-xl"></i>
               </div>
               <h3 class="text-lg font-medium text-gray-900 mt-5">Are you sure?</h3>
               <p class="text-sm text-gray-500 mt-2">Do you really want to delete the chapter "{{ chapterToDelete.ChapterName }}"?</p>
-              <div class="flex justify-center space-x-4 mt-6">
-                  <button @click="closeDeleteModal" class="btn btn-secondary">Cancel</button>
-                  <button @click="confirmDelete" class="btn btn-danger">Delete</button>
-              </div>
+            </div>
+            <div class="modal-footer justify-center">
+                <button @click="closeDeleteModal" class="btn btn-secondary">Cancel</button>
+                <button @click="confirmDelete" class="btn btn-danger">Delete</button>
+            </div>
           </div>
       </div>
     </main>

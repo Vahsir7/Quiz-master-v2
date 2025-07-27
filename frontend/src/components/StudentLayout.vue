@@ -14,6 +14,9 @@
         <router-link to="/student/history" class="nav-link">
           <i class="fas fa-history"></i> History
         </router-link>
+        <router-link to="/student/profile" class="nav-link">
+          <i class="fas fa-user-cog"></i> Profile
+        </router-link>
       </nav>
       <div class="sidebar-footer">
         <button @click="logout" class="logout-button">

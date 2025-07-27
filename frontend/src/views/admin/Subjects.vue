@@ -42,17 +42,21 @@
 
       <div v-if="isModalOpen" class="modal-overlay">
         <div class="modal-content">
-          <h3>{{ modal.isEditMode ? 'Edit Subject' : 'Add New Subject' }}</h3>
-          <form @submit.prevent="handleFormSubmit" class="space-y-4 mt-4">
-            <div>
-              <label for="subjectName" class="block text-sm font-medium text-gray-700">Subject Name</label>
-              <input type="text" id="subjectName" v-model="modal.data.SubjectName" class="mt-1 block w-full border-gray-300 rounded-md shadow-sm" required>
+          <form @submit.prevent="handleFormSubmit">
+            <div class="modal-header">
+              {{ modal.isEditMode ? 'Edit Subject' : 'Add New Subject' }}
             </div>
-            <div>
-              <label for="subjectDescription" class="block text-sm font-medium text-gray-700">Description</label>
-              <textarea id="subjectDescription" v-model="modal.data.Description" rows="3" class="mt-1 block w-full border-gray-300 rounded-md shadow-sm"></textarea>
+            <div class="modal-body">
+              <div class="form-group">
+                <label for="subjectName">Subject Name</label>
+                <input type="text" id="subjectName" v-model="modal.data.SubjectName" class="form-input" required>
+              </div>
+              <div class="form-group">
+                <label for="subjectDescription">Description</label>
+                <textarea id="subjectDescription" v-model="modal.data.Description" rows="3" class="form-textarea"></textarea>
+              </div>
             </div>
-            <div class="flex justify-end space-x-4 pt-4">
+            <div class="modal-footer">
               <button type="button" @click="closeModal" class="btn btn-secondary">Cancel</button>
               <button type="submit" class="btn btn-primary">{{ modal.isEditMode ? 'Update' : 'Create' }}</button>
             </div>
@@ -62,12 +66,14 @@
       
       <div v-if="isDeleteModalOpen" class="modal-overlay">
          <div class="modal-content text-center">
-            <div class="mx-auto flex items-center justify-center h-12 w-12 rounded-full bg-red-100">
-                <i class="fas fa-exclamation-triangle text-red-600 text-xl"></i>
+            <div class="modal-body">
+              <div class="mx-auto flex items-center justify-center h-12 w-12 rounded-full bg-red-100">
+                  <i class="fas fa-exclamation-triangle text-red-600 text-xl"></i>
+              </div>
+              <h3 class="text-lg font-medium text-gray-900 mt-5">Delete Subject</h3>
+              <p class="text-sm text-gray-500 mt-2">Are you sure you want to delete "{{ subjectToDelete.SubjectName }}"?</p>
             </div>
-            <h3 class="text-lg font-medium text-gray-900 mt-5">Delete Subject</h3>
-            <p class="text-sm text-gray-500 mt-2">Are you sure you want to delete "{{ subjectToDelete.SubjectName }}"?</p>
-            <div class="flex justify-center space-x-4 mt-6">
+            <div class="modal-footer justify-center">
               <button @click="closeDeleteModal" class="btn btn-secondary">Cancel</button>
               <button @click="confirmDelete" class="btn btn-danger">Delete</button>
             </div>
@@ -82,7 +88,6 @@ import apiService from '@/services/apiService';
 
 export default {
   name: 'SubjectsView',
-  // AdminLayout component is no longer needed here
   data() {
     return {
       loading: true,

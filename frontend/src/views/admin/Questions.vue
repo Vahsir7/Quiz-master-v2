@@ -19,88 +19,91 @@
       <div v-if="loading" class="text-center">Loading questions...</div>
       <div v-if="error" class="text-center text-red-500 p-4 bg-red-100 rounded-md">{{ error }}</div>
 
-      <div v-if="!loading && !error" class="space-y-6">
-        <div v-if="questions.length === 0" class="text-center text-gray-500 py-8">
+      <div v-if="!loading && !error" class="questions-list">
+        <div v-if="questions.length === 0" class="no-questions-card">
           No questions found for this exam. Click 'Add New Question' to begin.
         </div>
         
-        <div v-for="(question, index) in questions" :key="question.QuestionID" class="bg-white shadow-lg rounded-lg overflow-hidden">
-          <div class="p-4 bg-gray-50 border-b flex justify-between items-start">
-            <p class="font-semibold text-gray-800 pr-4">
+        <div v-for="(question, index) in questions" :key="question.QuestionID" class="question-card">
+          <div class="question-header">
+            <p class="question-statement">
               {{ index + 1 }}. {{ question.QuestionStatement }}
             </p>
-            <div class="space-x-3 flex-shrink-0">
+            <div class="question-actions">
               <button @click="openEditModal(question)" class="icon-edit" title="Edit Question"><i class="fas fa-pencil-alt"></i></button>
               <button @click="openDeleteModal(question)" class="icon-delete" title="Delete Question"><i class="fas fa-trash-alt"></i></button>
             </div>
           </div>
 
-          <div class="p-4 grid grid-cols-1 md:grid-cols-2 gap-3">
+          <div class="options-grid">
             <div
               v-for="i in 4"
               :key="i"
-              class="p-2 border rounded-md"
-              :class="question.CorrectOption === i ? 'bg-green-100 border-green-400 text-green-800 font-semibold' : 'bg-gray-50'"
+              class="option-item"
+              :class="{ 'is-correct': question.CorrectOption === i }"
             >
-              <span class="font-bold mr-2">{{ i }}:</span>
-              <span>{{ question['Option' + i] }}</span>
-              <i v-if="question.CorrectOption === i" class="fas fa-check-circle ml-2 text-green-600"></i>
+              <span>{{ i }}: {{ question['Option' + i] }}</span>
+              <i v-if="question.CorrectOption === i" class="fas fa-check-circle correct-icon"></i>
             </div>
           </div>
 
-          <div class="px-4 py-2 bg-gray-50 border-t text-xs text-gray-600 text-right">
-              <span class="font-bold">Marks:</span> {{ question.Marks }}, 
-              <span class="font-bold">Negative:</span> {{ question.NegMarks }}
+          <div class="question-footer">
+              <strong>Marks:</strong> {{ question.Marks }}, 
+              <strong>Negative:</strong> {{ question.NegMarks }}
           </div>
         </div>
       </div>
 
       <div v-if="isModalOpen" class="modal-overlay">
         <div class="modal-content max-w-2xl">
-          <h3 class="text-xl font-semibold mb-4">{{ modal.isEditMode ? 'Edit Question' : 'Add New Question' }}</h3>
-          <form @submit.prevent="handleFormSubmit" class="space-y-4">
-            <div>
-              <label class="block text-sm font-medium">Question Statement</label>
-              <textarea v-model="modal.data.QuestionStatement" rows="3" class="mt-1 block w-full border-gray-300 rounded-md shadow-sm"></textarea>
+          <div class="modal-header">
+            {{ modal.isEditMode ? 'Edit Question' : 'Add New Question' }}
+          </div>
+          <form @submit.prevent="handleFormSubmit">
+            <div class="modal-body">
+              <div class="form-group">
+                <label>Question Statement</label>
+                <textarea v-model="modal.data.QuestionStatement" rows="3" class="form-textarea"></textarea>
+              </div>
+              <div class="grid grid-cols-1 sm:grid-cols-2 gap-4">
+                <div class="form-group">
+                  <label>Option 1</label>
+                  <input type="text" v-model="modal.data.Option1" class="form-input">
+                </div>
+                <div class="form-group">
+                  <label>Option 2</label>
+                  <input type="text" v-model="modal.data.Option2" class="form-input">
+                </div>
+                <div class="form-group">
+                  <label>Option 3</label>
+                  <input type="text" v-model="modal.data.Option3" class="form-input">
+                </div>
+                <div class="form-group">
+                  <label>Option 4</label>
+                  <input type="text" v-model="modal.data.Option4" class="form-input">
+                </div>
+              </div>
+              <div class="grid grid-cols-1 sm:grid-cols-3 gap-4">
+                <div class="form-group">
+                  <label>Correct Option</label>
+                  <select v-model="modal.data.CorrectOption" class="form-select">
+                    <option :value="1">Option 1</option>
+                    <option :value="2">Option 2</option>
+                    <option :value="3">Option 3</option>
+                    <option :value="4">Option 4</option>
+                  </select>
+                </div>
+                <div class="form-group">
+                  <label>Marks</label>
+                  <input type="number" v-model="modal.data.Marks" class="form-input">
+                </div>
+                <div class="form-group">
+                  <label>Negative Marks</label>
+                  <input type="number" v-model="modal.data.NegMarks" class="form-input">
+                </div>
+              </div>
             </div>
-            <div class="grid grid-cols-1 sm:grid-cols-2 gap-4">
-              <div>
-                <label class="block text-sm font-medium">Option 1</label>
-                <input type="text" v-model="modal.data.Option1" class="mt-1 block w-full border-gray-300 rounded-md shadow-sm">
-              </div>
-              <div>
-                <label class="block text-sm font-medium">Option 2</label>
-                <input type="text" v-model="modal.data.Option2" class="mt-1 block w-full border-gray-300 rounded-md shadow-sm">
-              </div>
-              <div>
-                <label class="block text-sm font-medium">Option 3</label>
-                <input type="text" v-model="modal.data.Option3" class="mt-1 block w-full border-gray-300 rounded-md shadow-sm">
-              </div>
-              <div>
-                <label class="block text-sm font-medium">Option 4</label>
-                <input type="text" v-model="modal.data.Option4" class="mt-1 block w-full border-gray-300 rounded-md shadow-sm">
-              </div>
-            </div>
-            <div class="grid grid-cols-1 sm:grid-cols-3 gap-4">
-              <div>
-                <label class="block text-sm font-medium">Correct Option</label>
-                <select v-model="modal.data.CorrectOption" class="mt-1 block w-full border-gray-300 rounded-md shadow-sm">
-                  <option :value="1">Option 1</option>
-                  <option :value="2">Option 2</option>
-                  <option :value="3">Option 3</option>
-                  <option :value="4">Option 4</option>
-                </select>
-              </div>
-              <div>
-                <label class="block text-sm font-medium">Marks</label>
-                <input type="number" v-model="modal.data.Marks" class="mt-1 block w-full border-gray-300 rounded-md shadow-sm">
-              </div>
-              <div>
-                <label class="block text-sm font-medium">Negative Marks</label>
-                <input type="number" v-model="modal.data.NegMarks" class="mt-1 block w-full border-gray-300 rounded-md shadow-sm">
-              </div>
-            </div>
-            <div class="flex justify-end space-x-4 pt-4">
+            <div class="modal-footer">
               <button type="button" @click="closeModal" class="btn btn-secondary">Cancel</button>
               <button type="submit" class="btn btn-primary">Save Question</button>
             </div>
@@ -110,15 +113,17 @@
 
       <div v-if="isDeleteModalOpen" class="modal-overlay">
           <div class="modal-content text-center">
+            <div class="modal-body">
               <div class="mx-auto flex items-center justify-center h-12 w-12 rounded-full bg-red-100">
                   <i class="fas fa-exclamation-triangle text-red-600 text-xl"></i>
               </div>
               <h3 class="text-lg font-medium text-gray-900 mt-5">Are you sure?</h3>
               <p class="text-sm text-gray-500 mt-2">Do you really want to delete this question?</p>
-              <div class="flex justify-center space-x-4 mt-6">
-                  <button @click="closeDeleteModal" class="btn btn-secondary">Cancel</button>
-                  <button @click="confirmDelete" class="btn btn-danger">Delete</button>
-              </div>
+            </div>
+            <div class="modal-footer">
+                <button @click="closeDeleteModal" class="btn btn-secondary">Cancel</button>
+                <button @click="confirmDelete" class="btn btn-danger">Delete</button>
+            </div>
           </div>
       </div>
     </main>
@@ -230,3 +235,79 @@ export default {
   }
 };
 </script>
+
+<style scoped>
+.questions-list {
+  display: grid;
+  gap: 1.5rem;
+}
+.no-questions-card {
+  text-align: center;
+  padding: 2rem;
+  background-color: #fff;
+  border-radius: 0.5rem;
+  box-shadow: 0 1px 3px rgba(0,0,0,0.1);
+  color: #6b7280;
+}
+.question-card {
+  background-color: #fff;
+  border-radius: 0.5rem;
+  box-shadow: 0 4px 6px rgba(0,0,0,0.1);
+  overflow: hidden;
+}
+.question-header {
+  display: flex;
+  justify-content: space-between;
+  align-items: flex-start;
+  padding: 1rem 1.5rem;
+  background-color: #f9fafb;
+  border-bottom: 1px solid #e5e7eb;
+}
+.question-statement {
+  font-weight: 600;
+  color: #1f2937;
+  padding-right: 1rem;
+}
+.question-actions {
+  display: flex;
+  gap: 1rem;
+  flex-shrink: 0;
+}
+.options-grid {
+  display: grid;
+  grid-template-columns: repeat(1, 1fr);
+  gap: 0.75rem;
+  padding: 1.5rem;
+}
+@media (min-width: 768px) {
+  .options-grid {
+    grid-template-columns: repeat(2, 1fr);
+  }
+}
+.option-item {
+  padding: 0.75rem 1rem;
+  border: 1px solid #e5e7eb;
+  border-radius: 0.375rem;
+  background-color: #f9fafb;
+  display: flex;
+  justify-content: space-between;
+  align-items: center;
+}
+.option-item.is-correct {
+  background-color: #dcfce7;
+  border-color: #4ade80;
+  color: #166534;
+  font-weight: 500;
+}
+.correct-icon {
+  color: #22c55e;
+}
+.question-footer {
+  padding: 0.75rem 1.5rem;
+  background-color: #f9fafb;
+  border-top: 1px solid #e5e7eb;
+  text-align: right;
+  font-size: 0.875rem;
+  color: #6b7280;
+}
+</style>

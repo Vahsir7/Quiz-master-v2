@@ -3,7 +3,7 @@ from app.extension import db
 from app.models import Admin, Attempt, Exam, Subject, Student, Chapter, Question
 from app.decorators import authentication
 from datetime import datetime
-from app.celery_tasks import send_daily_reminders, generate_monthly_report, send_new_exam_notification, generate_exam_report_for_student
+from app.celery_tasks import send_daily_reminders, generate_monthly_report, send_new_exam_notification
 
 admin_bp = Blueprint('admin', __name__)
 
@@ -530,3 +530,16 @@ def send_exam_report(student_id):
     except Exception as e:
         print(f"Error triggering report generation: {e}")
         return jsonify({'message': 'Error triggering report generation', 'error': str(e)}), 500
+
+@authentication('admin')
+@admin_bp.route('/students/export', methods=['POST'])
+def export_students():
+    """
+    Triggers an asynchronous export of all students' data.
+    """
+    try:
+        from app.celery_tasks import export_all_student_reports
+        export_all_student_reports.delay()
+        return jsonify({'message': 'All students data is being exported and will be sent to your email.'}), 202
+    except Exception as e:
+        return jsonify({'message': 'Error triggering export', 'error': str(e)}), 500

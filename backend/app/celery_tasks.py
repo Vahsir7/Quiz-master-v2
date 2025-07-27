@@ -3,6 +3,8 @@ from flask_mail import Message
 from app.models import Student, Exam, Attempt
 from datetime import datetime, timedelta
 from sqlalchemy.orm import joinedload
+import io
+import csv
 
 @celery.task
 def send_new_exam_notification(exam_id):
@@ -161,8 +163,12 @@ def generate_exam_report_for_student(student_id):
         <p>Keep up the great work!</p>
         <p>Thanks,<br>The QuizMaster Team</p>
         """
+        csv_data = None
     else:
         table_rows = ""
+        output = io.StringIO()
+        writer = csv.writer(output)
+        writer.writerow(['Attempt Date', 'Exam Name', 'Total Marks', 'Marks Obtained'])
         for attempt in attempts:
             table_rows += f"""
             <tr>
@@ -172,7 +178,13 @@ def generate_exam_report_for_student(student_id):
                 <td>{attempt.Marks}</td>
             </tr>
             """
-
+            writer.writerow([
+                attempt.AttemptDate.strftime('%Y-%m-%d %H:%M'),
+                attempt.exam.ExamName,
+                attempt.TotalMarks,
+                attempt.Marks
+            ])
+        csv_data = output.getvalue()
         report_body = f"""
         <html>
             <head>
@@ -210,6 +222,64 @@ def generate_exam_report_for_student(student_id):
         recipients=[student.Email],
         html=report_body
     )
+
+    if csv_data:
+        msg.attach(
+            "performance_report.csv",
+            "text/csv",
+            csv_data
+        )
+
     mail.send(msg)
     #print(f"Exam report for the last 30 days sent to {student.Name}.")
     return f"Exam report for the last 30 days sent to {student.Name}."
+
+@celery.task
+def export_student_history_to_csv(student_id):
+    student = Student.query.get(student_id)
+    if not student:
+        return "Student not found"
+
+    attempts = Attempt.query.filter_by(StudentID=student_id).all()
+    
+    output = io.StringIO()
+    writer = csv.writer(output)
+    
+    writer.writerow(['Attempt ID', 'Exam Name', 'Marks Obtained', 'Total Marks', 'Attempt Date'])
+    
+    for attempt in attempts:
+        writer.writerow([
+            attempt.AttemptID,
+            attempt.exam.ExamName,
+            attempt.Marks,
+            attempt.TotalMarks,
+            attempt.AttemptDate.strftime('%Y-%m-%d %H:%M:%S')
+        ])
+    
+    csv_data = output.getvalue()
+    
+    msg = Message(
+        "Your Quiz History Export",
+        recipients=[student.Email],
+        body="Please find your quiz history attached."
+    )
+    
+    # Correctly attach the file
+    msg.attach(
+        "quiz_history.csv",
+        "text/csv",
+        csv_data
+    )
+    
+    mail.send(msg)
+    return f"Quiz history sent to {student.Email}"
+
+@celery.task
+def export_all_student_reports():
+    """
+    Triggers the generation of an exam performance report for every student.
+    """
+    students = Student.query.all()
+    for student in students:
+        generate_exam_report_for_student.delay(student.StudentID)
+    return f"Triggered performance report generation for {len(students)} students."

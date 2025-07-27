@@ -3,8 +3,12 @@
     <div class="dashboard-header">
       <h2>My Quiz History</h2>
       <p>A record of all your past quiz attempts.</p>
+      <button @click="handleExport" class="btn btn-primary mt-4">
+        <i class="fas fa-file-csv"></i> Export to CSV
+      </button>
     </div>
 
+    <div v-if="exportMessage" class="success-box">{{ exportMessage }}</div>
     <div v-if="loading" class="text-center p-8">Loading history...</div>
     <div v-if="error" class="error-box">{{ error }}</div>
 
@@ -59,6 +63,7 @@ export default {
       history: [],
       loading: true,
       error: null,
+      exportMessage: '',
     };
   },
   async mounted() {
@@ -76,6 +81,16 @@ export default {
         console.error(err);
       } finally {
         this.loading = false;
+      }
+    },
+    async handleExport() {
+      this.exportMessage = '';
+      this.error = null;
+      try {
+        const response = await apiService.exportStudentHistory();
+        this.exportMessage = response.data.message;
+      } catch (err) {
+        this.error = 'Failed to start the export process.';
       }
     },
   },
@@ -124,5 +139,12 @@ td {
 }
 .btn-view-results:hover {
   background-color: #2980b9;
+}
+.success-box {
+  background-color: #2ecc71;
+  color: white;
+  padding: 1rem;
+  border-radius: 5px;
+  margin: 1rem 0;
 }
 </style>

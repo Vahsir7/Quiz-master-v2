@@ -17,6 +17,7 @@ import StudentExams from '../views/student/Exams.vue';
 import StudentHistory from '../views/student/History.vue';
 import Quiz from '../views/student/Quiz.vue';
 import Results from '../views/student/Results.vue';
+import StudentProfile from '../views/student/Profile.vue'; 
 
 const routes = [
     {
@@ -109,6 +110,12 @@ const routes = [
         name: 'StudentResults',
         component: Results,
         props: true,
+        meta: { requiresAuth: true, role: 'student' }
+    },
+    {
+        path: '/student/profile',
+        name: 'StudentProfile',
+        component: StudentProfile,
         meta: { requiresAuth: true, role: 'student' }
     },
 ];

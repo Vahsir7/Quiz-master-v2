@@ -3,6 +3,7 @@
     <header class="content-header">
       <h2 class="content-header__title">Manage Exams</h2>
       <div class="header-actions">
+        <input type="text" v-model="filters.search" placeholder="Search by exam name..." @input="fetchExams" class="form-input w-auto mr-4">
         <button @click="openAddModal" class="btn btn-primary">
           <i class="fas fa-plus mr-2"></i> Add New Exam
         </button>
@@ -12,16 +13,7 @@
     <main class="content-main">
       <div class="filter-bar">
         <div class="filter-group">
-          <input
-            type="text"
-            v-model="filters.search"
-            placeholder="Search by exam name..."
-            @input="fetchExams"
-            class="search-input"
-          />
-        </div>
-        <div class="filter-group">
-          <select v-model="filters.subject_id" @change="onSubjectChange" class="filter-select">
+          <select v-model="filters.subject_id" @change="onSubjectChange" class="form-select">
             <option value="">All Subjects</option>
             <option v-for="subject in subjects" :key="subject.SubjectID" :value="subject.SubjectID">
               {{ subject.SubjectName }}
@@ -29,7 +21,7 @@
           </select>
         </div>
         <div class="filter-group">
-          <select v-model="filters.chapter_id" @change="fetchExams" class="filter-select" :disabled="!filters.subject_id">
+          <select v-model="filters.chapter_id" @change="fetchExams" class="form-select" :disabled="!filters.subject_id">
             <option value="">All Chapters</option>
             <option v-for="chapter in chapters" :key="chapter.ChapterID" :value="chapter.ChapterID">
               {{ chapter.ChapterName }}
@@ -69,7 +61,7 @@
               <td>{{ exam.TotalDuration }} mins</td>
               <td>{{ new Date(exam.ExamDate).toLocaleDateString() }}</td>
               <td class="actions">
-                <button @click="togglePublish(exam)" class="icon-publish" :title="exam.Published ? 'Unpublish Exam' : 'Publish Exam'">
+                <button @click="openPublishModal(exam)" class="icon-publish" :title="exam.Published ? 'Unpublish Exam' : 'Publish Exam'">
                   <i :class="exam.Published ? 'fas fa-eye-slash' : 'fas fa-eye'"></i>
                 </button>
                 <button @click="manageQuestions(exam)" class="icon-edit" title="Manage Questions">
@@ -91,58 +83,59 @@
       </div>
 
       <div v-if="isModalOpen" class="modal-overlay">
-        <div class="modal-content">
-          <h3 class="text-xl font-semibold mb-4">{{ modal.isEditMode ? 'Edit Exam' : 'Add New Exam' }}</h3>
-          <form @submit.prevent="handleFormSubmit" class="space-y-4">
-            <template v-if="!modal.isEditMode">
-              <div>
-                <label class="block text-sm font-medium">Subject</label>
-                <select v-model="selectedSubject" @change="fetchChaptersForSubject" class="mt-1 block w-full border-gray-300 rounded-md shadow-sm">
-                  <option disabled value="">Please select one</option>
-                  <option v-for="subject in subjects" :key="subject.SubjectID" :value="subject.SubjectID">
-                    {{ subject.SubjectName }}
-                  </option>
+        <div class="modal-content max-w-2xl">
+          <form @submit.prevent="handleFormSubmit">
+            <div class="modal-header">
+              {{ modal.isEditMode ? 'Edit Exam' : 'Add New Exam' }}
+            </div>
+            <div class="modal-body">
+              <template v-if="!modal.isEditMode">
+                <div class="form-group">
+                  <label>Subject</label>
+                  <select v-model="selectedSubject" @change="fetchChaptersForSubject(selectedSubject)" class="form-select">
+                    <option disabled value="">Please select one</option>
+                    <option v-for="subject in subjects" :key="subject.SubjectID" :value="subject.SubjectID">
+                      {{ subject.SubjectName }}
+                    </option>
+                  </select>
+                </div>
+                <div class="form-group">
+                  <label>Chapter</label>
+                  <select v-model="modal.data.ChapterID" class="form-select" :disabled="!selectedSubject">
+                    <option disabled value="">Please select one</option>
+                    <option v-for="chapter in chapters" :key="chapter.ChapterID" :value="chapter.ChapterID">
+                      {{ chapter.ChapterName }}
+                    </option>
+                  </select>
+                </div>
+              </template>
+              <div class="form-group">
+                <label>Exam Name</label>
+                <input type="text" v-model="modal.data.ExamName" class="form-input">
+              </div>
+              <div class="grid grid-cols-1 sm:grid-cols-2 gap-4">
+                <div class="form-group">
+                  <label>Total Duration (minutes)</label>
+                  <input type="number" v-model="modal.data.TotalDuration" class="form-input">
+                </div>
+                <div class="form-group">
+                  <label>Exam Date</label>
+                  <input type="date" v-model="modal.data.ExamDate" class="form-input">
+                </div>
+              </div>
+              <div class="form-group">
+                <label>Exam Type</label>
+                <select v-model="modal.data.ExamType" class="form-select">
+                  <option value="deadline">Deadline</option>
+                  <option value="specific_time">Specific Time</option>
                 </select>
               </div>
-              <div>
-                <label class="block text-sm font-medium">Chapter</label>
-                <select v-model="modal.data.ChapterID" class="mt-1 block w-full border-gray-300 rounded-md shadow-sm" :disabled="!selectedSubject">
-                  <option disabled value="">Please select one</option>
-                  <option v-for="chapter in chapters" :key="chapter.ChapterID" :value="chapter.ChapterID">
-                    {{ chapter.ChapterName }}
-                  </option>
-                </select>
+              <div v-if="modal.data.ExamType === 'specific_time'" class="form-group">
+                <label>Start Time</label>
+                <input type="time" v-model="modal.data.StartTime" class="form-input">
               </div>
-            </template>
-
-            <div>
-              <label class="block text-sm font-medium">Exam Name</label>
-              <input type="text" v-model="modal.data.ExamName" class="mt-1 block w-full border-gray-300 rounded-md shadow-sm">
             </div>
-            <div>
-              <label class="block text-sm font-medium">Total Duration (in minutes)</label>
-              <input type="number" v-model="modal.data.TotalDuration" class="mt-1 block w-full border-gray-300 rounded-md shadow-sm">
-            </div>
-            <div>
-              <label class="block text-sm font-medium">Exam Date</label>
-              <input type="date" v-model="modal.data.ExamDate" class="mt-1 block w-full border-gray-300 rounded-md shadow-sm">
-            </div>
-             <div>
-              <label class="block text-sm font-medium">Exam Type</label>
-              <select v-model="modal.data.ExamType" class="mt-1 block w-full border-gray-300 rounded-md shadow-sm">
-                <option value="deadline">Deadline</option>
-                <option value="specific_time">Specific Time</option>
-              </select>
-            </div>
-            <div v-if="modal.data.ExamType === 'specific_time'">
-              <label class="block text-sm font-medium">Start Time</label>
-              <input type="time" v-model="modal.data.StartTime" class="mt-1 block w-full border-gray-300 rounded-md shadow-sm">
-            </div>
-            <div>
-              <label class="block text-sm font-medium">Published</label>
-              <input type="checkbox" v-model="modal.data.Published" class="mt-1">
-            </div>
-            <div class="flex justify-end space-x-4 pt-4">
+            <div class="modal-footer">
               <button type="button" @click="closeModal" class="btn btn-secondary">Cancel</button>
               <button type="submit" class="btn btn-primary">Save Exam</button>
             </div>
@@ -152,20 +145,39 @@
 
       <div v-if="isDeleteModalOpen" class="modal-overlay">
         <div class="modal-content text-center">
-          <div class="mx-auto flex items-center justify-center h-12 w-12 rounded-full bg-red-100">
-            <i class="fas fa-exclamation-triangle text-red-600 text-xl"></i>
+          <div class="modal-body">
+            <div class="mx-auto flex items-center justify-center h-12 w-12 rounded-full bg-red-100">
+              <i class="fas fa-exclamation-triangle text-red-600 text-xl"></i>
+            </div>
+            <h3 class="text-lg font-medium text-gray-900 mt-5">Delete Exam</h3>
+            <p class="text-sm text-gray-500 mt-2">Are you sure you want to delete "{{ examToDelete.ExamName }}"?</p>
           </div>
-          <h3 class="text-lg font-medium text-gray-900 mt-5">Delete Exam</h3>
-          <p class="text-sm text-gray-500 mt-2">Are you sure you want to delete the exam "{{ examToDelete.ExamName }}"?</p>
-          <div class="flex justify-center space-x-4 mt-6">
+          <div class="modal-footer justify-center">
             <button @click="closeDeleteModal" class="btn btn-secondary">Cancel</button>
             <button @click="confirmDelete" class="btn btn-danger">Delete</button>
+          </div>
+        </div>
+      </div>
+
+      <div v-if="isPublishModalOpen" class="modal-overlay">
+        <div class="modal-content text-center">
+          <div class="modal-body">
+            <div class="mx-auto flex items-center justify-center h-12 w-12 rounded-full bg-yellow-100">
+              <i class="fas fa-exclamation-triangle text-yellow-600 text-xl"></i>
+            </div>
+            <h3 class="text-lg font-medium text-gray-900 mt-5">Confirm Action</h3>
+            <p class="text-sm text-gray-500 mt-2">Are you sure you want to {{ examToPublish.Published ? 'unpublish' : 'publish' }} the exam "{{ examToPublish.ExamName }}"?</p>
+          </div>
+          <div class="modal-footer justify-center">
+            <button @click="closePublishModal" class="btn btn-secondary">Cancel</button>
+            <button @click="confirmPublish" class="btn btn-primary">Confirm</button>
           </div>
         </div>
       </div>
     </main>
   </div>
 </template>
+
 <script>
 import apiService from '@/services/apiService';
 
@@ -186,6 +198,7 @@ export default {
       },
       isModalOpen: false,
       isDeleteModalOpen: false,
+      isPublishModalOpen: false,
       modal: {
         isEditMode: false,
         data: {
@@ -193,6 +206,7 @@ export default {
         },
       },
       examToDelete: null,
+      examToPublish: null,
     };
   },
   async mounted() {
@@ -311,13 +325,24 @@ export default {
         console.error(err);
       }
     },
-    async togglePublish(exam) {
+    openPublishModal(exam) {
+      this.examToPublish = exam;
+      this.isPublishModalOpen = true;
+    },
+    closePublishModal() {
+      this.isPublishModalOpen = false;
+      this.examToPublish = null;
+    },
+    async confirmPublish() {
+      if (!this.examToPublish) return;
       try {
-        await apiService.publishExam(exam.ExamID);
-        exam.Published = !exam.Published;
+        await apiService.publishExam(this.examToPublish.ExamID);
+        this.examToPublish.Published = !this.examToPublish.Published;
       } catch (err) {
-        this.error = `Failed to ${exam.Published ? 'unpublish' : 'publish'} exam.`;
+        this.error = `Failed to ${this.examToPublish.Published ? 'unpublish' : 'publish'} exam.`;
         console.error(err);
+      } finally {
+        this.closePublishModal();
       }
     },
     manageQuestions(exam) {

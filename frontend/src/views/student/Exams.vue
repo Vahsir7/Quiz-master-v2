@@ -40,7 +40,7 @@
     <div v-if="error" class="error-box">{{ error }}</div>
 
     <div v-if="!loading" class="table-wrapper">
-      <table class="min-w-full divide-y divide-gray-200">
+      <table class="data-table">
         <thead class="bg-gray-50">
           <tr>
             <th>Exam Name</th>

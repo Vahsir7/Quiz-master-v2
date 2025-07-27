@@ -29,7 +29,7 @@ export default {
   logout() {
     localStorage.removeItem('token');
     localStorage.removeItem('userType');
-    localStorage.removeItem('student_id'); // Also clear student_id on logout
+    localStorage.removeItem('student_id');
   },
   registerStudent(studentData) {
     return apiClient.post('/student/register', studentData);
@@ -46,9 +46,21 @@ export default {
       return apiClient.get(`/admin/students?search=${search}`);
     }
   },
-  deleteStudent(studentId) {
-    return apiClient.delete(`/admin/students?student_id=${studentId}`);
+  updateStudentProfile(studentData) {
+    const studentId = localStorage.getItem('student_id');
+    if (!studentId) {
+      return Promise.reject(new Error('Student ID not found.'));
+    }
+    return apiClient.put(`/student/${studentId}`, studentData);
   },
+  deleteStudentProfile() {
+    const studentId = localStorage.getItem('student_id');
+    if (!studentId) {
+      return Promise.reject(new Error('Student ID not found.'));
+    }
+    return apiClient.delete(`/student/${studentId}`);
+  },
+
   getSubjects(search = ''){
     return apiClient.get(`/admin/subjects?search=${search}`);
   },
@@ -113,6 +125,10 @@ export default {
   deleteExam(examId) {
     return apiClient.delete(`/admin/exams/${examId}`);
   },
+  exportAllStudentData() {
+    return apiClient.post('/admin/students/export');
+  },
+  
 
   // == Student Section ==
   getStudentDashboard() {
@@ -122,9 +138,11 @@ export default {
     }
     return apiClient.get(`/student/${studentId}/dashboard`);
   },
+
   getStudentSubjects() {
     return apiClient.get('/student/subjects');
   },
+
   getStudentChapters(subjectId) {
     if (subjectId) {
         return apiClient.get(`/student/chapters?subject_id=${subjectId}`);
@@ -168,9 +186,37 @@ export default {
     }
     return apiClient.get(`/student/${studentId}/attempt/${attemptId}/results`);
   },
+  getStudentProfile() {
+    const studentId = localStorage.getItem('student_id');
+    if (!studentId) {
+      return Promise.reject(new Error('Student ID not found.'));
+    }
+    return apiClient.get(`/student/${studentId}`);
+  },
+  updateStudentProfile(studentData) {
+    const studentId = localStorage.getItem('student_id');
+    if (!studentId) {
+      return Promise.reject(new Error('Student ID not found.'));
+    }
+    return apiClient.put(`/student/${studentId}`, studentData);
+  },
+  deleteStudentProfile() {
+    const studentId = localStorage.getItem('student_id');
+    if (!studentId) {
+      return Promise.reject(new Error('Student ID not found.'));
+    }
+    return apiClient.delete(`/student/${studentId}`);
+  },
 
   // == Celery Methods ==
   sendMonthlyReport(studentId) {
     return apiClient.post(`/admin/students/${studentId}/send-report`);
+  },
+  exportStudentHistory() {
+    const studentId = localStorage.getItem('student_id');
+    if (!studentId) {
+      return Promise.reject(new Error('Student ID not found.'));
+    }
+    return apiClient.post(`/student/${studentId}/history/export`);
   },
 };

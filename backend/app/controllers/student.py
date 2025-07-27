@@ -404,3 +404,22 @@ def get_history(student_id):
 
     except Exception as e:
         return jsonify({'message': 'Error fetching attempt history', 'error': str(e)}), 500
+    
+@authentication('student')
+@student_bp.route('/<int:student_id>/history/export', methods=['POST'])
+def export_history(student_id):
+    """
+    Triggers an asynchronous export of the student's quiz history.
+    """
+    try:
+        from app.celery_tasks import export_student_history_to_csv
+        # The student_id is available from the authentication decorator
+        student = Student.query.get(student_id)
+        if not student:
+            return jsonify({'message': 'Student not found'}), 404
+            
+        export_student_history_to_csv.delay(student.StudentID)
+        return jsonify({'message': 'Your quiz history is being exported and will be sent to your email.'}), 202
+    except Exception as e:
+        return jsonify({'message': 'Error triggering export', 'error': str(e)}), 500
+
