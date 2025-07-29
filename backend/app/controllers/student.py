@@ -1,6 +1,6 @@
-from flask import Blueprint, jsonify, request, g
+from flask import Blueprint, jsonify, request
 from app.extension import db
-from app.models import Admin, Attempt, Exam, Subject, Student, Chapter, SelectedAnswer
+from app.models import Attempt, Exam, Subject, Student, Chapter, SelectedAnswer
 from app.decorators import authentication
 from datetime import datetime
 from sqlalchemy.orm import joinedload
@@ -92,7 +92,6 @@ def get_student(student_id):
         student = Student.query.get(student_id)
         if not student:
             return jsonify({'message': 'Student not found'}), 404
-        # Return the student details
         return jsonify({
             'student_id': student.StudentID,
             'name': student.Name,
@@ -137,7 +136,6 @@ def delete_student(student_id):
         db.session.rollback()
         return jsonify({'message': 'Error deleting student', 'error': str(e)}), 500
 
-#Fetch data for student
 @authentication('student')
 @student_bp.route('/subjects', methods=['GET'])
 def get_subjects():
@@ -181,7 +179,6 @@ def get_exams():
         chapter_id = request.args.get('chapter_id', type=int)
         subject_id = request.args.get('subject_id', type=int)
 
-        # Base query to only fetch published exams
         query = Exam.query.filter_by(Published=True)
 
         if subject_id:
@@ -192,7 +189,6 @@ def get_exams():
             exams = query.all()
 
         if not exams:
-            # It's better to return an empty list than a 404
             return jsonify([]), 200
             
         return jsonify([{
@@ -213,17 +209,12 @@ def get_exams():
 @authentication('student')
 @student_bp.route('/<int:student_id>/exam/<int:exam_id>/start', methods=['POST'])
 def start_exam(student_id, exam_id):
-    """
-    Starts a new attempt for an exam for a specific student.
-    """
     try:
-        # The student_id now comes directly from the URL.
         exam = Exam.query.options(joinedload(Exam.questions)).get(exam_id)
 
         if not exam:
             return jsonify({'message': 'Exam not found'}), 404
-
-        # Create a new attempt record
+        
         new_attempt = Attempt(
             StudentID=student_id,
             ExamID=exam_id,
@@ -234,7 +225,6 @@ def start_exam(student_id, exam_id):
         db.session.add(new_attempt)
         db.session.commit()
 
-        # Prepare questions data (without answers)
         questions_data = [{
             'QuestionID': q.QuestionID,
             'QuestionStatement': q.QuestionStatement,
@@ -263,16 +253,12 @@ def start_exam(student_id, exam_id):
 
 @student_bp.route('/<int:student_id>/attempt/<int:attempt_id>/submit', methods=['POST'])
 def submit_exam(student_id, attempt_id):
-    """
-    Submits an exam attempt, calculates the score, and stores the result.
-    """
     try:
         data = request.get_json()
         answers = data.get('answers')
         #print("\n--- SUBMIT EXAM INITIATED ---")
         #print(f"Attempt ID: {attempt_id}, Student ID: {student_id}")
         #print(f"Received answers payload: {answers}")
-
 
         attempt = Attempt.query.filter_by(AttemptID=attempt_id, StudentID=student_id).first()
         if not attempt:
@@ -283,7 +269,6 @@ def submit_exam(student_id, attempt_id):
         total_score = 0
         question_map = {q.QuestionID: q for q in exam.questions}
         #print(f"Processing {len(answers)} answers for attempt ID: {attempt_id}")
-
 
         for question_id_str, selected_option_str in answers.items():
             question_id = int(question_id_str)
@@ -298,7 +283,6 @@ def submit_exam(student_id, attempt_id):
             #print(f"\n  Processing Question ID: {question_id}")
             #print(f"  Student's Answer: {selected_option}, Correct Answer: {question.CorrectOption}")
 
-
             if question:
                 correct = (question.CorrectOption == selected_option)
                 negative_marks = question.NegMarks or 0
@@ -311,7 +295,6 @@ def submit_exam(student_id, attempt_id):
                     #print(f"  Result: INCORRECT. Deducting {abs(negative_marks)} marks.")
 
                 #print(f"  Current Running Score: {total_score}")
-
                 # Store the student's answer
                 selected_answer = SelectedAnswer(
                     AttemptID=attempt_id,
@@ -379,16 +362,10 @@ def get_exam_results(student_id, attempt_id):
 @authentication('student')
 @student_bp.route('/<int:student_id>/history', methods=['GET'])
 def get_history(student_id):
-    """
-    Fetches the full attempt history for a specific student.
-    """
     try:
-        # Query attempts, joining with the exam to get necessary details
-        # Order by the most recent attempt first
         attempts = Attempt.query.options(joinedload(Attempt.exam))\
                                 .filter_by(StudentID=student_id)\
                                 .order_by(desc(Attempt.AttemptDate)).all()
-
         history_data = []
         for attempt in attempts:
             history_data.append({
@@ -408,18 +385,17 @@ def get_history(student_id):
 @authentication('student')
 @student_bp.route('/<int:student_id>/history/export', methods=['POST'])
 def export_history(student_id):
-    """
-    Triggers an asynchronous export of the student's quiz history.
-    """
     try:
-        from app.celery_tasks import export_student_history_to_csv
-        # The student_id is available from the authentication decorator
+        
         student = Student.query.get(student_id)
         if not student:
             return jsonify({'message': 'Student not found'}), 404
-            
+        
+        from app.celery_tasks import export_student_history_to_csv    
         export_student_history_to_csv.delay(student.StudentID)
+
         return jsonify({'message': 'Your quiz history is being exported and will be sent to your email.'}), 202
+    
     except Exception as e:
         return jsonify({'message': 'Error triggering export', 'error': str(e)}), 500
 

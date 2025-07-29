@@ -1,6 +1,8 @@
 import os
+from datetime import timedelta
 from dotenv import load_dotenv
 load_dotenv()
+
 class Config:
     SECRET_KEY = os.getenv('SECRET_KEY')
     CSRF_ENABLED = True
@@ -17,5 +19,17 @@ class Config:
     MAIL_DEFAULT_SENDER = os.getenv('MAIL_DEFAULT_SENDER')
 
     # Celery settings
-    CELERY_BROKER_URL = os.getenv('CELERY_BROKER_URL', 'redis://localhost:6379/0')
-    CELERY_RESULT_BACKEND = os.getenv('CELERY_RESULT_BACKEND', 'redis://localhost:6379/0')
+    broker_url = os.getenv('CELERY_BROKER_URL', 'redis://localhost:6379/0')
+    result_backend = os.getenv('CELERY_RESULT_BACKEND', 'redis://localhost:6379/0')
+    
+    # Celery beat schedule
+    CELERY_BEAT_SCHEDULE = {
+        'send-daily-reminders': {
+            'task': 'app.celery_tasks.send_daily_reminders',
+            'schedule': timedelta(days=1),
+        },
+    }
+
+    CACHE_TYPE = 'RedisCache'
+    CACHE_REDIS_URL = 'redis://localhost:6379/1' 
+    CACHE_DEFAULT_TIMEOUT = 300

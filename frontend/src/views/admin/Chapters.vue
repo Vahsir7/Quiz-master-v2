@@ -17,7 +17,7 @@
       </div>
 
       <div v-if="loading" class="text-center text-gray-600">Loading chapters...</div>
-      <div v-if="error" class="text-center text-red-500 p-4 bg-red-100 rounded-md">{{ error }}</div>
+      <div v-if="error" class="error-box">{{ error }}</div>
 
       <div v-if="!loading && !error" class="data-table-wrapper">
         <table class="data-table">

@@ -8,9 +8,6 @@ import csv
 
 @celery.task
 def send_new_exam_notification(exam_id):
-    """
-    Sends an email to all students when a new exam is published.
-    """
     exam = Exam.query.get(exam_id)
     if not exam:
         return "Exam not found."
@@ -18,7 +15,7 @@ def send_new_exam_notification(exam_id):
     students = Student.query.all()
     if not students:
         return "No students to notify."
-
+    
     subject = f"New Quiz Published: {exam.ExamName}"
     body = f"""
     Hi students,
@@ -35,14 +32,12 @@ def send_new_exam_notification(exam_id):
     The QuizMaster Team
     """
 
-    # Use a connection to send emails in a batch, which is more efficient
     with mail.connect() as conn:
         for student in students:
             msg = Message(subject=subject, recipients=[student.Email], body=body)
             conn.send(msg)
-            
-    return f"Notification sent for exam '{exam.ExamName}' to {len(students)} students."
 
+    return f"Notification sent for exam '{exam.ExamName}' to {len(students)} students."
 
 @celery.task
 def send_daily_reminders():
@@ -65,9 +60,16 @@ def send_daily_reminders():
             msg = Message(
                 "Quiz Reminder!",
                 recipients=[student.Email],
-                body=f"Hi {student.Name},\n\nThis is a reminder that the following quizzes are due today: {exam_names}.\n\nGood luck!\nQuizMaster Team"
+                body=f"""Hi {student.Name},
+                
+                This is a reminder that the following quizzes are due today: 
+                {exam_names}
+
+                Good luck!
+                QuizMaster Team"""
             )
             mail.send(msg)
+
     return f"Sent reminders for {len(upcoming_exams)} exams."
 
 @celery.task
@@ -77,7 +79,6 @@ def generate_monthly_report(student_id):
         if not student:
             return "Student not found."
         print(student)
-        #fetch all attempts filter by student id all time
         attempts = Attempt.query.filter_by(StudentID=student_id)
         print(attempts)
         if not attempts:
@@ -142,10 +143,7 @@ def generate_monthly_report(student_id):
         return "Error generating monthly report."
 
 @celery.task
-def generate_exam_report_for_student(student_id):
-    """
-    Generates a performance report for a specific exam for a student and sends it via email.
-    """
+def generate_exam_report_for_student(student_id): #specific to student button
     student = Student.query.get(student_id)
     if not student:
         return "Student not found."
@@ -160,7 +158,6 @@ def generate_exam_report_for_student(student_id):
         report_body = f"""
         <p>Hi {student.Name},</p>
         <p>You have not attempted any quizzes in the last 30 days.</p>
-        <p>Keep up the great work!</p>
         <p>Thanks,<br>The QuizMaster Team</p>
         """
         csv_data = None
@@ -241,7 +238,9 @@ def export_student_history_to_csv(student_id):
         return "Student not found"
 
     attempts = Attempt.query.filter_by(StudentID=student_id).all()
-    
+    if not attempts:
+        return "No attempts found for this student."
+
     output = io.StringIO()
     writer = csv.writer(output)
     
@@ -263,8 +262,6 @@ def export_student_history_to_csv(student_id):
         recipients=[student.Email],
         body="Please find your quiz history attached."
     )
-    
-    # Correctly attach the file
     msg.attach(
         "quiz_history.csv",
         "text/csv",
@@ -276,9 +273,6 @@ def export_student_history_to_csv(student_id):
 
 @celery.task
 def export_all_student_reports():
-    """
-    Triggers the generation of an exam performance report for every student.
-    """
     students = Student.query.all()
     for student in students:
         generate_exam_report_for_student.delay(student.StudentID)

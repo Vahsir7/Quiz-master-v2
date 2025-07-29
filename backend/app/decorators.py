@@ -16,9 +16,8 @@ def authentication(required_role):
             if not token:
                 return jsonify({'message': 'Token is missing!'}), 401
             try:
-                print(f"Decoding token: {token}")
-                # Decode the token using the secret key
-                print(f"Using secret key: {current_app.config['SECRET_KEY']}")
+                #print(f"Decoding token: {token}")
+                #print(f"Using secret key: {current_app.config['SECRET_KEY']}")
                 data = jwt.decode(token, current_app.config['SECRET_KEY'], algorithms=["HS256"])
                 user_id = data['sub']
                 user_type = data.get('type') 
@@ -30,19 +29,19 @@ def authentication(required_role):
                         current_user = Student.query.get(user_id)
                     else:
                         return jsonify({'message': 'Cannot fetch user!'}), 404
-                    print(f"User found in database: {current_user}")
+                    #print(f"User found in database: {current_user}")
                 else:
                     return jsonify({'message': 'Unauthorized user type!'}), 403
                 if not current_user:
                     return jsonify({'message': 'User associated with token not found!'}), 404
                 g = current_user
             except jwt.ExpiredSignatureError:
-                print("TOKEN ERROR: Expired signature.")
+                #print("TOKEN ERROR: Expired signature.")
                 return jsonify({'message': 'Token has expired!'}), 401
             except jwt.InvalidTokenError:
-                print("TOKEN ERROR: Invalid token. Secret key mismatch or malformed token.")
+                #print("TOKEN ERROR: Invalid token. Secret key mismatch or malformed token.")
                 return jsonify({'message': 'Invalid token!'}), 401
-            print(f"Current user: {current_user}")
+            #print(f"Current user: {current_user}")
             if not current_user:
                 return jsonify({'message': 'User not found!'}), 404
             return f(*args, **kwargs)

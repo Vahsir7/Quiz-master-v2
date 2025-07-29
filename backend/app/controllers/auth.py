@@ -14,26 +14,26 @@ def login():
     login_type = data.get('type')
     email = data.get('email')
     password = data.get('password')
-    print(f"Login type: {login_type}, Email: {email}, Password: {password}")
+    #print(f"Login type: {login_type}, Email: {email}, Password: {password}")
     if not email or not password:
         return jsonify({'message': 'Email and password are required'}), 400
     
     if login_type == 'admin':
         admin = Admin.query.filter_by(Email=email).first()
-        print(admin)
+        #print(admin)
         if not admin:
             return jsonify({'message': 'Admin not found'}), 404
-        print(admin.PasswordHash, password)
+        #print(admin.PasswordHash, password)
         if admin and bcrypt.check_password_hash(admin.PasswordHash, password):
             print("Admin authenticated")
-            key = current_app.config['SECRET_KEY']
-            print(f"\n>>> ENCODING KEY: '{key}' | TYPE: {type(key)} | LENGTH: {len(key)}\n")
+            #key = current_app.config['SECRET_KEY']
+            #print(f"\n>>> ENCODING KEY: '{key}' | TYPE: {type(key)} | LENGTH: {len(key)}\n")
             token = jwt.encode({
                 'sub': admin.AdminID,
                 'type': 'admin',
-                'exp': datetime.datetime.utcnow() + datetime.timedelta(hours=1)
+                'exp': datetime.datetime.now() + datetime.timedelta(hours=1)
             }, current_app.config['SECRET_KEY'], algorithm='HS256')
-            print(f"Generated token: {token}")
+            #print(f"Generated token: {token}")
             return jsonify({'token': token, "message": "Admin authenticated"}), 200
         
     else:
@@ -44,7 +44,7 @@ def login():
             token = jwt.encode({
                 'sub': student.StudentID,
                 'type': 'student',
-                'exp': datetime.datetime.utcnow() + datetime.timedelta(hours=1)
+                'exp': datetime.datetime.now() + datetime.timedelta(hours=1)
             }, current_app.config['SECRET_KEY'], algorithm='HS256')
             return jsonify({
                 'token': token, 

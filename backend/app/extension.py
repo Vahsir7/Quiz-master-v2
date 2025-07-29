@@ -3,9 +3,11 @@ from flask_bcrypt import Bcrypt
 from flask_migrate import Migrate
 from flask_mail import Mail
 from celery import Celery
+from flask_caching import Cache
 
 migrate = Migrate()
 db = SQLAlchemy()
 bcrypt = Bcrypt()
 mail = Mail()
 celery = Celery()
+cache = Cache()

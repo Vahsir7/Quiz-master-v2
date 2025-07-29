@@ -1,9 +1,10 @@
 from flask import Blueprint, jsonify, request, current_app
-from app.extension import db
+from app.extension import db, cache
 from app.models import Admin, Attempt, Exam, Subject, Student, Chapter, Question
 from app.decorators import authentication
 from datetime import datetime
 from app.celery_tasks import send_daily_reminders, generate_monthly_report, send_new_exam_notification
+
 
 admin_bp = Blueprint('admin', __name__)
 
@@ -52,12 +53,13 @@ def dashboard():
 # Student
 @authentication('admin')
 @admin_bp.route('/students', methods=['GET'])
+@cache.cached(timeout=300)
 def get_students():
     try:
         student_id = request.args.get('student_id', type=int)
         search = request.args.get('search', type=str)
         if student_id:
-            # Logic for: GET /admin/students?student_id={{id}}
+            # GET /admin/students?student_id={{id}}
             student = Student.query.get(student_id)
             if not student:
                 return jsonify({'message': 'Student not found'}), 404
@@ -88,7 +90,7 @@ def delete_student():
         student_id = request.args.get('student_id', type=int)
         if not student_id:
             return jsonify({'message': 'student_id query parameter is required to delete a student'}), 400
-        # Logic for: DELETE /admin/students?student_id={{id}}
+        # DELETE /admin/students?student_id={{id}}
         student = Student.query.get(student_id)
         if not student:
             return jsonify({'message': 'Student not found'}), 404
@@ -155,6 +157,7 @@ def delete_subject(subject_id):
 
 @authentication('admin')
 @admin_bp.route('/subjects', methods=['GET'])
+@cache.cached(timeout=300)
 def get_subjects():
     try:
         search = request.args.get('search', type=str)
@@ -200,6 +203,7 @@ def create_chapter(subject_id):
 
 @authentication('admin')
 @admin_bp.route('/subjects/<int:subject_id>/chapters', methods=['GET'])
+@cache.cached(timeout=300)
 def get_chapters(subject_id):
     try:
         search = request.args.get('search', type=str)
@@ -277,6 +281,7 @@ def publish_exam(exam_id):
 
 @authentication('admin')
 @admin_bp.route('/exams', methods=['GET'])
+@cache.cached(timeout=300)
 def get_exam():
     try:
         chapter_id = request.args.get('chapter_id', type=int)
@@ -339,8 +344,8 @@ def create_exam():
         new_exam = Exam(
             ChapterID=chapter_id,
             ExamName=data.get('ExamName'),
-            TotalMarks=0,  # Always initialize to 0
-            TotalQuestions=0,  # Always initialize to 0
+            TotalMarks=0,
+            TotalQuestions=0,
             TotalDuration=int(data.get('TotalDuration', 0)),
             ExamDate=exam_date,
             Published=data.get('Published', False),
@@ -451,6 +456,7 @@ def create_question(exam_id):
 
 @authentication('admin')
 @admin_bp.route('/exams/<int:exam_id>/questions', methods=['GET'])
+@cache.cached(timeout=300)
 def get_questions(exam_id):
     try:
         questions = Question.query.filter_by(ExamID=exam_id).all()
@@ -524,6 +530,7 @@ def send_exam_report(student_id):
             return jsonify({'message': 'Student not found'}), 404
 
         print(student)
+        from app.celery_tasks import generate_exam_report_for_student
         generate_exam_report_for_student.delay(student_id)
 
         return jsonify({'message': 'Exam report generation has been triggered.'}), 202

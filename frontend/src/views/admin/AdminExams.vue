@@ -371,16 +371,10 @@ export default {
   margin-bottom: 1.5rem;
   box-shadow: 0 2px 4px rgba(0,0,0,0.05);
 }
-
 .filter-group {
   flex: 1 1 200px;
 }
-
 .search-input, .filter-select {
   width: 100%;
-  padding: 0.75rem;
-  border: 1px solid #bdc3c7;
-  border-radius: 5px;
-  font-size: 1rem;
 }
 </style>

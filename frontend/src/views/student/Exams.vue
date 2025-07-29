@@ -1,5 +1,4 @@
 <template>
-  <StudentLayout>
     <div class="dashboard-header">
       <h2>Browse All Exams</h2>
       <p>Find a quiz to test your knowledge.</p>
@@ -96,8 +95,6 @@
         </div>
       </div>
     </div>
-
-  </StudentLayout>
 </template>
 
 <script>
@@ -233,11 +230,6 @@ export default {
 </script>
 
 <style scoped>
-.dashboard-header { margin-bottom: 2rem; }
-.dashboard-header h2 { font-size: 2rem; font-weight: bold; color: #2c3e50; }
-.dashboard-header p { font-size: 1rem; color: #7f8c8d; }
-.error-box { background-color: #e74c3c; color: white; padding: 1rem; border-radius: 5px; margin: 1rem 0; }
-
 .filter-bar {
   display: flex;
   flex-wrap: wrap;
@@ -248,11 +240,9 @@ export default {
   margin-bottom: 1.5rem;
   box-shadow: 0 2px 4px rgba(0,0,0,0.05);
 }
-
 .filter-group {
   flex: 1 1 200px;
 }
-
 .search-input, .filter-select {
   width: 100%;
   padding: 0.75rem;
@@ -260,7 +250,6 @@ export default {
   border-radius: 5px;
   font-size: 1rem;
 }
-
 .checkbox-group {
   display: flex;
   align-items: center;
@@ -273,29 +262,6 @@ export default {
   width: 1.25rem;
   height: 1.25rem;
 }
-
-.table-wrapper {
-  background-color: #ffffff;
-  box-shadow: 0 4px 6px rgba(0,0,0,0.1);
-  border-radius: 8px;
-  overflow: hidden;
-}
-
-th {
-  padding: 0.75rem 1rem;
-  text-align: left;
-  font-size: 0.875rem;
-  font-weight: 600;
-  color: #7f8c8d;
-  text-transform: uppercase;
-  background-color: #f4f7f6;
-}
-
-td {
-  padding: 1rem;
-  border-bottom: 1px solid #ecf0f1;
-}
-
 .btn-start-quiz {
   background-color: #2ecc71;
   color: white;
@@ -308,44 +274,5 @@ td {
 }
 .btn-start-quiz:hover {
   background-color: #27ae60;
-}
-
-.modal-overlay {
-  position: fixed;
-  inset: 0;
-  background-color: rgba(0, 0, 0, 0.5);
-  display: flex;
-  justify-content: center;
-  align-items: center;
-  z-index: 50;
-}
-
-.modal-content {
-  background-color: white;
-  border-radius: 0.5rem;
-  box-shadow: 0 10px 15px rgba(0, 0, 0, 0.1);
-  padding: 1.5rem;
-  width: 100%;
-  max-width: 500px;
-}
-
-.btn {
-  display: inline-flex;
-  align-items: center;
-  font-weight: bold;
-  padding: 0.5rem 1rem;
-  border-radius: 0.5rem;
-  border: none;
-  cursor: pointer;
-  transition: background-color 0.2s;
-  text-decoration: none;
-  color: white;
-}
-.btn-secondary {
-  background-color: #e5e7eb; /* gray-200 */
-  color: #1f2937;
-}
-.btn-secondary:hover {
-  background-color: #d1d5db; /* gray-300 */
 }
 </style>

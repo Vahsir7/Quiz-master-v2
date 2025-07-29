@@ -19,6 +19,5 @@ export default {
 </script>
 
 <style>
-/* Import the central layout CSS */
 @import '@/assets/admin.css';
 </style>

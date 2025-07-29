@@ -182,32 +182,6 @@ export default {
   background-color: #f3f4f6; /* gray-100 */
 }
 
-.main-content {
-  flex: 1; /* Take up remaining space */
-  display: flex;
-  flex-direction: column;
-  overflow: hidden;
-}
-
-.content-header {
-  background-color: white;
-  box-shadow: 0 1px 3px rgba(0,0,0,0.1);
-  padding: 1rem 1.5rem;
-}
-
-.content-header h2 {
-  font-size: 1.5rem;
-  font-weight: 600; /* semibold */
-  color: #1f2937; /* gray-800 */
-}
-
-.content-main {
-  flex: 1;
-  overflow-y: auto;
-  padding: 1.5rem;
-}
-
-/* Grids */
 .kpi-grid {
   display: grid;
   grid-template-columns: repeat(4, 1fr);
@@ -221,7 +195,6 @@ export default {
   gap: 1.5rem;
 }
 
-/* Cards */
 .kpi-card, .chart-card {
   background-color: white;
   padding: 1.5rem;
@@ -236,14 +209,14 @@ export default {
 
 .kpi-info h3 {
   font-size: 0.875rem;
-  font-weight: 500; /* medium */
-  color: #6b7280; /* gray-500 */
+  font-weight: 500;
+  color: #6b7280;
 }
 
 .kpi-info p {
   font-size: 1.5rem;
   font-weight: bold;
-  color: #111827; /* gray-900 */
+  color: #111827;
 }
 
 .icon-wrapper {
@@ -252,7 +225,7 @@ export default {
   justify-content: center;
   height: 3rem;
   width: 3rem;
-  border-radius: 9999px; /* rounded-full */
+  border-radius: 9999px;
   color: white;
   margin-right: 1rem;
 }
@@ -260,23 +233,20 @@ export default {
   font-size: 1.25rem;
 }
 
-/* Icon Colors */
 .icon-wrapper.blue { background-color: #3b82f6; }
 .icon-wrapper.green { background-color: #10b981; }
 .icon-wrapper.yellow { background-color: #f59e0b; }
 .icon-wrapper.purple { background-color: #8b5cf6; }
 
-/* Chart Styling */
 .chart-card h3 {
   font-size: 1.125rem;
   font-weight: 500;
   margin-bottom: 1rem;
 }
 .chart-wrapper {
-  height: 16rem; /* h-64 */
+  height: 16rem;
 }
 
-/* Responsive Grid Adjustments */
 @media (max-width: 1024px) {
   .kpi-grid {
     grid-template-columns: repeat(2, 1fr);

@@ -1,5 +1,4 @@
 <template>
-  <StudentLayout>
     <div v-if="loading" class="text-center">Loading Quiz...</div>
     <div v-if="error" class="error-box">{{ error }}</div>
 
@@ -30,7 +29,7 @@
             :key="i"
             class="option"
             :class="{ 'selected': answers[currentQuestion.QuestionID] === i }"
-            @click="selectAnswer(currentQuestion.QuestionID, i)"
+            @click="selectAnswer({ questionId: currentQuestion.QuestionID, option: i })"
           >
             <span class="option-label">{{ i }}.</span>
             <span>{{ currentQuestion['Option' + i] }}</span>
@@ -41,15 +40,14 @@
       <div class="quiz-navigation">
         <button @click="prevQuestion" :disabled="currentQuestionIndex === 0" class="btn-nav">Previous</button>
         <button v-if="currentQuestionIndex < questions.length - 1" @click="nextQuestion" class="btn-nav">Next</button>
-        <button v-if="currentQuestionIndex < questions.length - 1" @click="submitQuiz" class="btn-submit">Finish</button>
-        <button v-else @click="submitQuiz" class="btn-submit">Submit Quiz</button>
+        <button v-if="currentQuestionIndex < questions.length - 1" @click="handleQuizSubmit" class="btn-submit">Finish</button>
+        <button v-else @click="handleQuizSubmit" class="btn-submit">Submit Quiz</button>
       </div>
     </div>
-  </StudentLayout>
 </template>
 
 <script>
-import apiService from '@/services/apiService';
+import { mapState, mapGetters, mapActions, mapMutations } from 'vuex';
 import StudentLayout from '@/components/StudentLayout.vue';
 
 export default {
@@ -58,86 +56,68 @@ export default {
   props: ['examId'],
   data() {
     return {
-      loading: true,
-      error: null,
-      attemptId: null,
-      examDetails: null,
-      questions: [],
-      answers: {}, // { questionId: selectedOption }
-      currentQuestionIndex: 0,
-      timer: null,
-      timeLeft: 0,
+      timerInterval: null,
     };
   },
   computed: {
-    currentQuestion() {
-      return this.questions[this.currentQuestionIndex];
-    },
-    progressPercentage() {
-      return ((this.currentQuestionIndex + 1) / this.questions.length) * 100;
-    },
-    formattedTime() {
-      const minutes = Math.floor(this.timeLeft / 60);
-      const seconds = this.timeLeft % 60;
-      return `${minutes.toString().padStart(2, '0')}:${seconds.toString().padStart(2, '0')}`;
-    }
-  },
-  async mounted() {
-    this.startQuiz();
-  },
-  beforeUnmount() {
-    clearInterval(this.timer);
+    ...mapState({
+      loading: state => state.quiz.loading,
+      error: state => state.quiz.error,
+      examDetails: state => state.quiz.examDetails,
+      questions: state => state.quiz.questions,
+      answers: state => state.quiz.answers,
+      currentQuestionIndex: state => state.quiz.currentQuestionIndex,
+    }),
+    ...mapGetters([
+      'currentQuestion',
+      'progressPercentage',
+      'formattedTime'
+    ]),
   },
   methods: {
-    async startQuiz() {
-      try {
-        const response = await apiService.startExam(this.examId);
-        this.attemptId = response.data.attempt_id;
-        this.examDetails = response.data.exam_details;
-        this.questions = response.data.questions;
-        this.timeLeft = this.examDetails.total_duration * 60;
-        this.startTimer();
-      } catch (err) {
-        this.error = 'Failed to start the quiz.';
-      } finally {
-        this.loading = false;
-      }
-    },
+    ...mapActions([
+      'startQuiz',
+      'submitQuiz'
+    ]),
+    ...mapMutations([
+      'selectAnswer',
+      'nextQuestion',
+      'prevQuestion',
+      'decrementTime',
+      'resetQuizState',
+    ]),
+
     startTimer() {
-      this.timer = setInterval(() => {
-        if (this.timeLeft > 0) {
-          this.timeLeft--;
+      this.timerInterval = setInterval(() => {
+        if (this.$store.state.quiz.timeLeft > 0) {
+          this.decrementTime();
         } else {
-          clearInterval(this.timer);
-          this.submitQuiz();
+          clearInterval(this.timerInterval);
+          this.handleQuizSubmit();
         }
       }, 1000);
     },
-    selectAnswer(questionId, option) {
-      this.answers[questionId] = option;
-    },
-    nextQuestion() {
-      if (this.currentQuestionIndex < this.questions.length - 1) {
-        this.currentQuestionIndex++;
-      }
-    },
-    prevQuestion() {
-      if (this.currentQuestionIndex > 0) {
-        this.currentQuestionIndex--;
-      }
-    },
-    async submitQuiz() {
-      clearInterval(this.timer);
-      this.loading = true;
+
+    async handleQuizSubmit() {
+      clearInterval(this.timerInterval);
       try {
-        await apiService.submitExam(this.attemptId, this.answers);
-        this.$router.push({ name: 'StudentResults', params: { attemptId: this.attemptId } });
+        const attemptId = await this.submitQuiz();
+        this.$router.push({ name: 'StudentResults', params: { attemptId } });
       } catch (err) {
-        this.error = 'Failed to submit your answers. Please try again.';
-        this.loading = false;
+        this.error = 'Failed to submit quiz. Please try again.';
       }
     }
-  }
+  },
+  async mounted() {
+    this.resetQuizState();
+    await this.startQuiz(this.examId);
+    if (!this.error) {
+      this.startTimer();
+    }
+  },
+  beforeUnmount() {
+    clearInterval(this.timerInterval);
+  },
 };
 </script>
 
@@ -149,30 +129,11 @@ export default {
 .progress { height: 100%; background-color: #3498db; transition: width 0.3s; }
 .progress-text { text-align: right; font-size: 0.9rem; color: #7f8c8d; margin-top: 0.5rem; }
 .question-card { background: white; padding: 2rem; border-radius: 8px; margin-top: 1rem; box-shadow: 0 4px 6px rgba(0,0,0,0.1); }
-.question-header-container {
-  display: flex;
-  justify-content: space-between;
-  align-items: flex-start;
-  margin-bottom: 1.5rem;
-  gap: 1rem;
-}
+.question-header-container { display: flex; justify-content: space-between; align-items: flex-start; margin-bottom: 1.5rem; gap: 1rem; }
 .question-statement { font-size: 1.25rem; font-weight: 500; flex-grow: 1; }
-.question-meta {
-  flex-shrink: 0;
-  text-align: right;
-  font-size: 0.9rem;
-  color: #7f8c8d;
-}
-.marks {
-  color: #27ae60;
-  font-weight: bold;
-  display: block;
-}
-.neg-marks {
-  color: #c0392b;
-  font-weight: bold;
-  display: block;
-}
+.question-meta { flex-shrink: 0; text-align: right; font-size: 0.9rem; color: #7f8c8d; }
+.marks { color: #27ae60; font-weight: bold; display: block; }
+.neg-marks { color: #c0392b; font-weight: bold; display: block; }
 .options-grid { display: grid; gap: 1rem; }
 .option { padding: 1rem; border: 1px solid #bdc3c7; border-radius: 5px; cursor: pointer; transition: all 0.2s; }
 .option:hover { background-color: #f9f9f9; }

@@ -3,7 +3,7 @@ import Login from '../views/Login.vue';
 import Register from '../views/Register.vue';
 
 // Admin Views
-import AdminLayout from '../components/AdminLayout.vue'; // The layout is now a route component
+import AdminLayout from '../components/AdminLayout.vue';
 import AdminDashboard from '../views/admin/AdminDashboard.vue';
 import Subjects from '../views/admin/Subjects.vue';
 import Chapters from '../views/admin/Chapters.vue';
@@ -17,7 +17,8 @@ import StudentExams from '../views/student/Exams.vue';
 import StudentHistory from '../views/student/History.vue';
 import Quiz from '../views/student/Quiz.vue';
 import Results from '../views/student/Results.vue';
-import StudentProfile from '../views/student/Profile.vue'; 
+import StudentProfile from '../views/student/Profile.vue';
+import StudentLayout from '@/components/StudentLayout.vue';
 
 const routes = [
     {
@@ -79,44 +80,45 @@ const routes = [
         ]
     },
 
-    // --- Student Routes ---
+    // Student Routes
     {
-        path: '/student/dashboard',
-        name: 'StudentDashboard',
-        component: StudentDashboard,
-        meta: { requiresAuth: true, role: 'student' }
-    },
-    {
-        path: '/student/exams',
-        name: 'StudentExams',
-        component: StudentExams,
-        meta: { requiresAuth: true, role: 'student' }
-    },
-    {
-        path: '/student/history',
-        name: 'StudentHistory',
-        component: StudentHistory,
-        meta: { requiresAuth: true, role: 'student' }
-    },
-    {
-        path: '/student/exam/:examId/attempt',
-        name: 'StudentQuiz',
-        component: Quiz,
-        props: true,
-        meta: { requiresAuth: true, role: 'student' }
-    },
-    {
-        path: '/student/attempt/:attemptId/results',
-        name: 'StudentResults',
-        component: Results,
-        props: true,
-        meta: { requiresAuth: true, role: 'student' }
-    },
-    {
-        path: '/student/profile',
-        name: 'StudentProfile',
-        component: StudentProfile,
-        meta: { requiresAuth: true, role: 'student' }
+        path: '/student',
+        component: StudentLayout,
+        meta: { requiresAuth: true, role: 'student' },
+        children: [
+            {
+                path: 'dashboard',
+                name: 'StudentDashboard',
+                component: StudentDashboard,
+            },
+            {
+                path: 'exams',
+                name: 'StudentExams',
+                component: StudentExams,
+            },
+            {
+                path: 'history',
+                name: 'StudentHistory',
+                component: StudentHistory,
+            },
+            {
+                path: 'exam/:examId/attempt',
+                name: 'StudentQuiz',
+                component: Quiz,
+                props: true,
+            },
+            {
+                path: 'attempt/:attemptId/results',
+                name: 'StudentResults',
+                component: Results,
+                props: true,
+            },
+            {
+                path: 'profile',
+                name: 'StudentProfile',
+                component: StudentProfile,
+            }
+        ]
     },
 ];
 

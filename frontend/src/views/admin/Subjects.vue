@@ -12,7 +12,7 @@
 
     <main class="content-main">
       <div v-if="loading">Loading subjects...</div>
-      <div v-if="error">{{ error }}</div>
+      <div v-if="error" class="error-box">{{ error }}</div>
 
       <div v-if="!loading && !error" class="data-table-wrapper">
         <table class="data-table">
@@ -63,7 +63,7 @@
           </form>
         </div>
       </div>
-      
+
       <div v-if="isDeleteModalOpen" class="modal-overlay">
          <div class="modal-content text-center">
             <div class="modal-body">
@@ -185,3 +185,4 @@ export default {
   },
 };
 </script>
+

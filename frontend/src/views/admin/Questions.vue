@@ -17,13 +17,13 @@
       </div>
 
       <div v-if="loading" class="text-center">Loading questions...</div>
-      <div v-if="error" class="text-center text-red-500 p-4 bg-red-100 rounded-md">{{ error }}</div>
+      <div v-if="error" class="error-box">{{ error }}</div>
 
       <div v-if="!loading && !error" class="questions-list">
         <div v-if="questions.length === 0" class="no-questions-card">
           No questions found for this exam. Click 'Add New Question' to begin.
         </div>
-        
+
         <div v-for="(question, index) in questions" :key="question.QuestionID" class="question-card">
           <div class="question-header">
             <p class="question-statement">
@@ -48,7 +48,7 @@
           </div>
 
           <div class="question-footer">
-              <strong>Marks:</strong> {{ question.Marks }}, 
+              <strong>Marks:</strong> {{ question.Marks }},
               <strong>Negative:</strong> {{ question.NegMarks }}
           </div>
         </div>
@@ -120,7 +120,7 @@
               <h3 class="text-lg font-medium text-gray-900 mt-5">Are you sure?</h3>
               <p class="text-sm text-gray-500 mt-2">Do you really want to delete this question?</p>
             </div>
-            <div class="modal-footer">
+            <div class="modal-footer justify-center">
                 <button @click="closeDeleteModal" class="btn btn-secondary">Cancel</button>
                 <button @click="confirmDelete" class="btn btn-danger">Delete</button>
             </div>
@@ -195,13 +195,13 @@ export default {
       this.isModalOpen = false;
     },
     async handleFormSubmit() {
-      const questionData = { 
-        ...this.modal.data, 
+      const questionData = {
+        ...this.modal.data,
         CorrectOption: parseInt(this.modal.data.CorrectOption),
         Marks: parseInt(this.modal.data.Marks),
         NegMarks: parseInt(this.modal.data.NegMarks)
       };
-      
+
       try {
         if (this.modal.isEditMode) {
           await apiService.updateQuestion(this.modal.data.QuestionID, questionData);

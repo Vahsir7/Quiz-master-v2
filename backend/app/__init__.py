@@ -1,11 +1,10 @@
-from datetime import timedelta
-import os
 from flask import Flask
+import os
 from .config import Config
 from flask_cors import CORS
 
 def create_app(config_class=Config):
-    from .extension import db, bcrypt, migrate, mail, celery
+    from .extension import db, bcrypt, migrate, mail, celery, cache
     app = Flask(__name__)
     app.config.from_object(config_class)
 
@@ -15,19 +14,13 @@ def create_app(config_class=Config):
     bcrypt.init_app(app)
     mail.init_app(app)
     migrate.init_app(app, db)
+    cache.init_app(app)
     
-    # Update celery config
     celery.conf.update(
-        broker_url=app.config['CELERY_BROKER_URL'],
-        result_backend=app.config['CELERY_RESULT_BACKEND'],
+        broker_url=Config.broker_url,
+        result_backend=Config.result_backend
     )
-    celery.conf.beat_schedule = {
-        'send-daily-reminders': {
-            'task': 'app.celery_tasks.send_daily_reminders',
-            'schedule': timedelta(days=1),
-        },
-    }
-
+    celery.conf.beat_schedule = Config.CELERY_BEAT_SCHEDULE
     class ContextTask(celery.Task):
         def __call__(self, *args, **kwargs):
             with app.app_context():
