@@ -3,6 +3,7 @@
     <header class="content-header">
       <h2 class="content-header__title">Manage Exams</h2>
       <div class="header-actions">
+        <input type="text" v-model="filters.search" placeholder="Search by exam name..." class="form-input w-auto mr-4">
         <button @click="openAddModal" class="btn btn-primary">
           <i class="fas fa-plus mr-2"></i> Add New Exam
         </button>
@@ -11,9 +12,6 @@
 
     <main class="content-main">
       <div class="filter-bar">
-        <div class="filter-group">
-          <input type="text" v-model="filters.search" placeholder="Search by exam name..." class="form-input w-auto mr-4">
-        </div>
         <div class="filter-group">
           <select v-model="filters.subject_id" @change="onSubjectChange" class="form-select">
             <option value="">All Subjects</option>
@@ -66,7 +64,7 @@
                 <button @click="openPublishModal(exam)" class="icon-publish" :title="exam.Published ? 'Unpublish Exam' : 'Publish Exam'">
                   <i :class="exam.Published ? 'fas fa-eye-slash' : 'fas fa-eye'"></i>
                 </button>
-                <button @click="manageQuestions(exam)" class="icon-edit" title="Manage Questions">
+                <button @click="manageQuestions(exam)" class="icon-edit" title="Manage Questions" :disabled="exam.Published">
                   <i class="fas fa-list-ul"></i>
                 </button>
                 <button @click="openEditModal(exam)" class="icon-edit" title="Edit Exam" :disabled="exam.Published">

@@ -244,3 +244,7 @@
   border-radius: 5px;
   font-size: 1rem;
 }
+.data-table .actions .icon-edit:disabled {
+  color: #9ca3af; /* gray-400 */
+  cursor: not-allowed;
+}

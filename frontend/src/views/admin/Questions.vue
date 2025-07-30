@@ -23,7 +23,7 @@
         <div v-if="questions.length === 0" class="no-questions-card">
           No questions found for this exam. Click 'Add New Question' to begin.
         </div>
-        
+
         <div v-for="(question, index) in questions" :key="question.QuestionID" class="question-card">
           <div class="question-header">
             <p class="question-statement">
@@ -48,7 +48,7 @@
           </div>
 
           <div class="question-footer">
-              <strong>Marks:</strong> {{ question.Marks }}, 
+              <strong>Marks:</strong> {{ question.Marks }},
               <strong>Negative:</strong> {{ question.NegMarks }}
           </div>
         </div>
@@ -195,13 +195,13 @@ export default {
       this.isModalOpen = false;
     },
     async handleFormSubmit() {
-      const questionData = { 
-        ...this.modal.data, 
+      const questionData = {
+        ...this.modal.data,
         CorrectOption: parseInt(this.modal.data.CorrectOption),
         Marks: parseInt(this.modal.data.Marks),
         NegMarks: parseInt(this.modal.data.NegMarks)
       };
-      
+
       try {
         if (this.modal.isEditMode) {
           await apiService.updateQuestion(this.modal.data.QuestionID, questionData);
@@ -211,7 +211,11 @@ export default {
         this.fetchQuestions();
         this.closeModal();
       } catch (err) {
-        this.error = "Failed to save question.";
+        if (err.response && err.response.data && err.response.data.message) {
+            this.error = err.response.data.message;
+        } else {
+            this.error = "Failed to save question.";
+        }
       }
     },
     openDeleteModal(question) {

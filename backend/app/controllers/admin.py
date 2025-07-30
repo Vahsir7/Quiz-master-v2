@@ -53,7 +53,6 @@ def dashboard():
 # Student
 @authentication('admin')
 @admin_bp.route('/students', methods=['GET'])
-@cache.cached(timeout=300)
 def get_students():
     try:
         student_id = request.args.get('student_id', type=int)
@@ -96,6 +95,7 @@ def delete_student():
             return jsonify({'message': 'Student not found'}), 404
         db.session.delete(student)
         db.session.commit()
+        cache.clear()
         return jsonify({'message': 'Student deleted successfully'}), 200
     except Exception as e:
         db.session.rollback()
@@ -118,6 +118,7 @@ def create_subject():
         new_subject = Subject(SubjectName=subject_name, Description=description)
         db.session.add(new_subject)
         db.session.commit()
+        cache.clear()
         return jsonify({'message': 'Subject created successfully', 'subject_id': new_subject.SubjectID}), 201
     except Exception as e:
         db.session.rollback()
@@ -136,6 +137,7 @@ def update_subject(subject_id):
         subject.SubjectName = data.get('SubjectName', subject.SubjectName)
         subject.Description = data.get('Description', subject.Description)
         db.session.commit()
+        cache.clear()
         return jsonify({'message': 'Subject updated successfully'}), 200
     except Exception as e:
         db.session.rollback()
@@ -150,6 +152,7 @@ def delete_subject(subject_id):
             return jsonify({'message': 'Subject not found'}), 404
         db.session.delete(subject)
         db.session.commit()
+        cache.clear()
         return jsonify({'message': 'Subject deleted successfully'}), 200
     except Exception as e:
         db.session.rollback()
@@ -195,6 +198,7 @@ def create_chapter(subject_id):
                               Description=description)
         db.session.add(new_chapter)
         db.session.commit()
+        cache.clear()
         return jsonify({'message': 'Chapter created successfully', 'chapter_id': new_chapter.ChapterID}), 201
 
     except Exception as e:
@@ -234,6 +238,7 @@ def update_chapter(chapter_id):
         chapter.ChapterName = data.get('ChapterName', chapter.ChapterName)
         chapter.Description = data.get('Description', chapter.Description)
         db.session.commit()
+        cache.clear()
         return jsonify({'message': 'Chapter updated successfully'}), 200
 
     except Exception as e:
@@ -249,6 +254,7 @@ def delete_chapter(chapter_id):
             return jsonify({'message': 'Chapter not found'}), 404
         db.session.delete(chapter)
         db.session.commit()
+        cache.clear()
         return jsonify({'message': 'Chapter deleted successfully'}), 200
     except Exception as e:
         db.session.rollback()
@@ -270,6 +276,7 @@ def publish_exam(exam_id):
             send_new_exam_notification.delay(exam.ExamID)
             
         db.session.commit()
+        cache.clear()
         
         return jsonify({
             'message': f'Exam has been {"published" if exam.Published else "unpublished"}.',
@@ -292,7 +299,7 @@ def get_exam():
             Exam,
             Chapter.ChapterName,
             Subject.SubjectName,
-            Chapter.SubjectID  # Added SubjectID to the query
+            Chapter.SubjectID
         ).join(Exam.chapter).join(Chapter.subject)
 
         if subject_id:
@@ -305,7 +312,6 @@ def get_exam():
         all_exams = query.all()
 
         result = []
-        # Unpack the new SubjectID from the query result
         for exam, chapter_name, subject_name, subject_id_val in all_exams:
             result.append({
                 'ExamID': exam.ExamID,
@@ -313,9 +319,9 @@ def get_exam():
                 'TotalQuestions': exam.TotalQuestions,
                 'TotalDuration': exam.TotalDuration,
                 'ExamDate': exam.ExamDate.strftime("%Y-%m-%d"),
-                'ChapterID': exam.ChapterID,  # Added ChapterID
+                'ChapterID': exam.ChapterID,
                 'ChapterName': chapter_name,
-                'SubjectID': subject_id_val,  # Added SubjectID
+                'SubjectID': subject_id_val,
                 'SubjectName': subject_name,
                 'Published': exam.Published,
                 'ExamType': exam.ExamType,
@@ -358,6 +364,7 @@ def create_exam():
         )
         db.session.add(new_exam)
         db.session.commit()
+        cache.clear()
         return jsonify({'message': 'Exam created successfully', 'exam_id': new_exam.ExamID}), 201
 
     except Exception as e:
@@ -395,6 +402,7 @@ def update_exam(exam_id):
             exam.StartTime = None
 
         db.session.commit()
+        cache.clear()
         return jsonify({'message': 'Exam updated successfully'}), 200
 
     except Exception as e:
@@ -410,6 +418,7 @@ def delete_exam(exam_id):
             return jsonify({'message': 'Exam not found'}), 404
         db.session.delete(exam)
         db.session.commit()
+        cache.clear()
         return jsonify({'message': 'Exam deleted successfully'}), 200
     except Exception as e:
         db.session.rollback()
@@ -421,8 +430,8 @@ def delete_exam(exam_id):
 @admin_bp.route('/exams/<int:exam_id>/questions', methods=['POST'])
 def create_question(exam_id):
     exam = Exam.query.get_or_404(exam_id)
-    if not exam:
-        return jsonify({'message': 'Exam not found'}), 404
+    if exam.Published:
+        return jsonify({'message': 'Cannot add questions to a published exam'}), 403
     data = request.get_json()
     if not data:
         return jsonify({'message': 'Invalid input'}), 400
@@ -436,9 +445,6 @@ def create_question(exam_id):
         marks = data.get('Marks', 0)
         negative_marks = data.get('NegMarks', 0)
 
-        if not Exam.query.get(exam_id):
-            return jsonify({'message': 'Exam not found'}), 404
-
         new_question = Question(ExamID=exam_id,
                                 QuestionStatement=question_statement,
                                 Option1=option1,
@@ -449,10 +455,10 @@ def create_question(exam_id):
                                 Marks=marks,
                                 NegMarks=negative_marks)
         db.session.add(new_question)
-        exam = Exam.query.get(exam_id)
         exam.TotalQuestions += 1
         exam.TotalMarks += marks
         db.session.commit()
+        cache.clear()
         return jsonify({'message': 'Question created successfully', 'question_id': new_question.QuestionID}), 201
     except Exception as e:
         db.session.rollback()
@@ -488,6 +494,10 @@ def update_question(question_id):
         question = Question.query.get(question_id)
         if not question:
             return jsonify({'message': 'Question not found'}), 404
+        
+        exam = Exam.query.get(question.ExamID)
+        if exam.Published:
+            return jsonify({'message': 'Cannot update questions of a published exam'}), 403
 
         question.QuestionStatement = data.get('QuestionStatement', question.QuestionStatement)
         question.Option1 = data.get('Option1', question.Option1)
@@ -495,12 +505,12 @@ def update_question(question_id):
         question.Option3 = data.get('Option3', question.Option3)
         question.Option4 = data.get('Option4', question.Option4)
         question.CorrectOption = data.get('CorrectOption', question.CorrectOption)
-        exam = Exam.query.get(question.ExamID)
         exam.TotalMarks = (exam.TotalMarks - question.Marks) + data.get('Marks', question.Marks)
         question.Marks = data.get('Marks', question.Marks)
         question.NegMarks = data.get('NegMarks', question.NegMarks)
 
         db.session.commit()
+        cache.clear()
         return jsonify({'message': 'Question updated successfully'}), 200
 
     except Exception as e:
@@ -514,11 +524,16 @@ def delete_question(question_id):
         question = Question.query.get(question_id)
         if not question:
             return jsonify({'message': 'Question not found'}), 404
+            
         exam = Exam.query.get(question.ExamID)
+        if exam.Published:
+            return jsonify({'message': 'Cannot delete questions of a published exam'}), 403
+
         exam.TotalQuestions -= 1
         exam.TotalMarks -= question.Marks
         db.session.delete(question)
         db.session.commit()
+        cache.clear()
         return jsonify({'message': 'Question deleted successfully'}), 200
     except Exception as e:
         db.session.rollback()
