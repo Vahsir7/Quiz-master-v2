@@ -3,7 +3,6 @@
 [![Python](https://img.shields.io/badge/Python-3.8+-blue.svg)](https://python.org)
 [![Vue.js](https://img.shields.io/badge/Vue.js-3.x-green.svg)](https://vuejs.org)
 [![Flask](https://img.shields.io/badge/Flask-2.x-lightgrey.svg)](https://flask.palletsprojects.com)
-[![License](https://img.shields.io/badge/License-MIT-yellow.svg)](LICENSE)
 
 QuizMaster v2 is a full-featured, interactive quiz platform designed for educational environments. It provides a seamless experience for both administrators and students, featuring a robust backend powered by Flask and a dynamic, responsive frontend built with Vue.js.
 
@@ -153,8 +152,12 @@ Quiz-master-v2/
 │   │   ├── controllers/     # API route handlers
 │   │   ├── models.py        # Database models
 │   │   ├── config.py        # Configuration settings
+│   │   ├── celery_tasks.py  # Celery tasks
+│   │   ├── decorators.py    # Request/response decorators
+│   │   ├── extensions.py    # Utility functions
 │   │   └── __init__.py      # App factory
 │   ├── requirements.txt     # Python dependencies
+│   ├── app.py               # Main application entry point
 │   └── celery_worker.py     # Celery worker setup
 ├── frontend/                # Vue.js frontend
 │   ├── src/

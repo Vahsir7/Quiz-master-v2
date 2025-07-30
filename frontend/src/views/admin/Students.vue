@@ -12,7 +12,7 @@
 
     <main class="content-main">
       <div v-if="loading" class="text-center">Loading students...</div>
-      <div v-if="error" class="error-box">{{ error }}</div>
+      <div v-if="error" class="text-center text-red-500 p-4 bg-red-100 rounded-md">{{ error }}</div>
       <div v-if="exportMessage" class="success-box">{{ exportMessage }}</div>
 
       <div v-if="!loading && !error" class="data-table-wrapper">
@@ -49,19 +49,17 @@
 
       <div v-if="isDetailsModalOpen" class="modal-overlay">
         <div class="modal-content max-w-lg">
-          <h3 class="modal-header">Student Details</h3>
-          <div class="modal-body">
-            <div v-if="detailsLoading" class="text-center">Loading details...</div>
-            <div v-else class="space-y-2 text-sm">
-              <p><strong>ID:</strong> {{ selectedStudent.StudentID }}</p>
-              <p><strong>Name:</strong> {{ selectedStudent.Name }}</p>
-              <p><strong>Email:</strong> {{ selectedStudent.Email }}</p>
-              <p><strong>Date of Birth:</strong> {{ selectedStudent.DOB }}</p>
-              <p><strong>College:</strong> {{ selectedStudent.CollegeName }}</p>
-              <p><strong>Degree:</strong> {{ selectedStudent.Degree }}</p>
-            </div>
+          <h3 class="text-xl font-semibold mb-4">Student Details</h3>
+          <div v-if="detailsLoading" class="text-center">Loading details...</div>
+          <div v-else class="space-y-2 text-sm">
+            <p><strong>ID:</strong> {{ selectedStudent.StudentID }}</p>
+            <p><strong>Name:</strong> {{ selectedStudent.Name }}</p>
+            <p><strong>Email:</strong> {{ selectedStudent.Email }}</p>
+            <p><strong>Date of Birth:</strong> {{ selectedStudent.DOB }}</p>
+            <p><strong>College:</strong> {{ selectedStudent.CollegeName }}</p>
+            <p><strong>Degree:</strong> {{ selectedStudent.Degree }}</p>
           </div>
-          <div class="modal-footer">
+          <div class="flex justify-end mt-6">
             <button @click="closeDetailsModal" class="btn btn-secondary">Close</button>
           </div>
         </div>
@@ -69,14 +67,12 @@
 
       <div v-if="isDeleteModalOpen" class="modal-overlay">
         <div class="modal-content text-center">
-           <div class="modal-body">
-              <div class="mx-auto flex items-center justify-center h-12 w-12 rounded-full bg-red-100">
-                <i class="fas fa-exclamation-triangle text-red-600 text-xl"></i>
-              </div>
-              <h3 class="text-lg font-medium text-gray-900 mt-5">Delete Student</h3>
-              <p class="text-sm text-gray-500 mt-2">Are you sure you want to delete "{{ studentToDelete.Name }}"? This action cannot be undone.</p>
+          <div class="mx-auto flex items-center justify-center h-12 w-12 rounded-full bg-red-100">
+            <i class="fas fa-exclamation-triangle text-red-600 text-xl"></i>
           </div>
-          <div class="modal-footer justify-center">
+          <h3 class="text-lg font-medium text-gray-900 mt-5">Delete Student</h3>
+          <p class="text-sm text-gray-500 mt-2">Are you sure you want to delete "{{ studentToDelete.Name }}"? This action cannot be undone.</p>
+          <div class="flex justify-center space-x-4 mt-6">
             <button @click="closeDeleteModal" class="btn btn-secondary">Cancel</button>
             <button @click="confirmDelete" class="btn btn-danger">Delete</button>
           </div>
@@ -151,7 +147,7 @@ export default {
       if (!this.studentToDelete) return;
       try {
         await apiService.deleteStudent(this.studentToDelete.StudentID);
-        this.fetchStudents();
+        this.fetchStudents(); // Refresh the list
       } catch (err) {
         this.error = 'Failed to delete student.';
         console.error(err);
@@ -180,3 +176,12 @@ export default {
   },
 };
 </script>
+<style scoped>
+.success-box {
+  background-color: #2ecc71;
+  color: white;
+  padding: 1rem;
+  border-radius: 5px;
+  margin: 1rem 0;
+}
+</style>

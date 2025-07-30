@@ -1,4 +1,5 @@
 <template>
+  <StudentLayout>
     <div class="dashboard-header">
       <h2>Your Dashboard</h2>
       <p>An overview of your performance and activity.</p>
@@ -60,10 +61,12 @@
         </div>
       </div>
     </div>
+  </StudentLayout>
 </template>
 
 <script>
 import apiService from '@/services/apiService';
+import StudentLayout from '@/components/StudentLayout.vue';
 import { Bar, Doughnut, Line } from 'vue-chartjs';
 import { Chart as ChartJS, Title, Tooltip, Legend, BarElement, CategoryScale, LinearScale, ArcElement, PointElement, LineElement } from 'chart.js';
 
@@ -71,7 +74,7 @@ ChartJS.register(Title, Tooltip, Legend, BarElement, CategoryScale, LinearScale,
 
 export default {
   name: 'StudentDashboard',
-  components: { Bar, Doughnut, Line },
+  components: { StudentLayout, Bar, Doughnut, Line },
   data() {
     return {
       stats: {
@@ -137,7 +140,7 @@ export default {
           data: this.stats.average_scores.map(item => item.average_score.toFixed(2))
         }]
       };
-
+      
       this.chartData.performance = {
         labels: this.stats.attempts_over_time.map((_, index) => `Attempt ${index + 1}`),
         datasets: [{
@@ -153,12 +156,18 @@ export default {
 </script>
 
 <style scoped>
+.dashboard-header { margin-bottom: 2rem; }
+.dashboard-header h2 { font-size: 2rem; font-weight: bold; color: #2c3e50; }
+.dashboard-header p { font-size: 1rem; color: #7f8c8d; }
+.error-box { background-color: #e74c3c; color: white; padding: 1rem; border-radius: 5px; margin: 1rem 0; }
+
 .stats-grid {
   display: grid;
   grid-template-columns: repeat(auto-fit, minmax(250px, 1fr));
   gap: 1.5rem;
   margin-bottom: 3rem;
 }
+
 .stat-card {
   background-color: #ffffff;
   border-radius: 8px;
@@ -167,6 +176,7 @@ export default {
   align-items: center;
   box-shadow: 0 4px 6px rgba(0,0,0,0.05);
 }
+
 .stat-icon {
   font-size: 2rem;
   padding: 1rem;
@@ -178,6 +188,7 @@ export default {
 .stat-icon.green { background-color: #2ecc71; }
 .stat-icon.yellow { background-color: #f1c40f; }
 .stat-icon.orange { background-color: #f97316; }
+
 .stat-info h3 {
   font-size: 0.9rem;
   color: #7f8c8d;
@@ -188,23 +199,27 @@ export default {
   font-weight: bold;
   color: #2c3e50;
 }
+
 .charts-grid {
   display: grid;
   grid-template-columns: repeat(auto-fit, minmax(300px, 1fr));
   gap: 1.5rem;
 }
+
 .chart-card {
   background-color: #ffffff;
   border-radius: 8px;
   padding: 1.5rem;
   box-shadow: 0 4px 6px rgba(0,0,0,0.05);
 }
+
 .chart-card h3 {
   font-size: 1.25rem;
   font-weight: 600;
   color: #34495e;
   margin-bottom: 1rem;
 }
+
 .chart-wrapper {
   height: 300px;
   position: relative;

@@ -1,4 +1,5 @@
 <template>
+  <StudentLayout>
     <div class="dashboard-header">
       <h2>My Profile</h2>
       <p>View and update your personal information.</p>
@@ -33,10 +34,10 @@
           </div>
         </div>
         <div class="form-actions">
-          <button v-if="!isEditMode" @click="enableEditMode" type="button" class="btn btn-primary">Edit Profile</button>
+          <button v-if="!isEditMode" @click="enableEditMode" type="button" class="btn-primary">Edit Profile</button>
           <div v-if="isEditMode">
             <button @click="cancelUpdate" type="button" class="btn btn-secondary mr-2">Cancel</button>
-            <button type="submit" class="btn btn-primary">Save Changes</button>
+            <button type="submit" class="btn-primary">Save Changes</button>
           </div>
         </div>
       </form>
@@ -44,7 +45,7 @@
       <div class="delete-section">
         <h3>Delete Account</h3>
         <p>Permanently delete your account and all associated data. This action cannot be undone.</p>
-        <button @click="openDeleteModal" class="btn btn-danger">Delete My Account</button>
+        <button @click="openDeleteModal" class="btn-danger">Delete My Account</button>
       </div>
     </div>
 
@@ -54,24 +55,27 @@
         <p class="text-sm text-gray-500 mt-2">Do you really want to delete your account? All of your data will be permanently removed.</p>
         <div class="flex justify-center space-x-4 mt-6">
           <button @click="closeDeleteModal" class="btn btn-secondary">Cancel</button>
-          <button @click="handleDelete" class="btn btn-danger">Delete</button>
+          <button @click="handleDelete" class="btn-danger">Delete</button>
         </div>
       </div>
     </div>
+  </StudentLayout>
 </template>
 
 <script>
+import StudentLayout from '@/components/StudentLayout.vue';
 import apiService from '@/services/apiService';
 
 export default {
   name: 'StudentProfile',
+  components: { StudentLayout },
   data() {
     return {
       loading: true,
       error: null,
       successMessage: '',
       formData: null,
-      originalFormData: null,
+      originalFormData: null, // To store a backup of the data
       isEditMode: false,
       isDeleteModalOpen: false,
     };
@@ -91,10 +95,12 @@ export default {
       }
     },
     enableEditMode() {
+      // Create a backup of the current data before editing
       this.originalFormData = { ...this.formData };
       this.isEditMode = true;
     },
     cancelUpdate() {
+      // Restore the original data and exit edit mode
       this.formData = { ...this.originalFormData };
       this.isEditMode = false;
       this.error = null;
@@ -106,7 +112,7 @@ export default {
       try {
         const response = await apiService.updateStudentProfile(this.formData);
         this.successMessage = response.data.message;
-        this.isEditMode = false;
+        this.isEditMode = false; // Disable edit mode after successful update
       } catch (err) {
         this.error = 'Failed to update your profile.';
       }
@@ -152,6 +158,17 @@ export default {
     grid-template-columns: repeat(2, 1fr);
   }
 }
+.form-group label {
+  display: block;
+  font-weight: 500;
+  margin-bottom: 0.5rem;
+}
+.form-input {
+  width: 100%;
+  padding: 0.75rem;
+  border: 1px solid #d1d5db;
+  border-radius: 5px;
+}
 .form-input:disabled {
   background-color: #f3f4f6;
   cursor: not-allowed;
@@ -159,6 +176,22 @@ export default {
 .form-actions {
   margin-top: 2rem;
   text-align: right;
+}
+.btn-primary {
+  background-color: #3498db;
+  color: white;
+  padding: 0.75rem 1.5rem;
+  border-radius: 5px;
+  border: none;
+  cursor: pointer;
+}
+.btn-danger {
+  background-color: #e74c3c;
+  color: white;
+  padding: 0.75rem 1.5rem;
+  border-radius: 5px;
+  border: none;
+  cursor: pointer;
 }
 .delete-section {
   margin-top: 2rem;
@@ -172,5 +205,39 @@ export default {
 .delete-section p {
   margin: 0.5rem 0 1rem;
   color: #7f8c8d;
+}
+.success-box {
+  background-color: #2ecc71;
+  color: white;
+  padding: 1rem;
+  border-radius: 5px;
+  margin-bottom: 1.5rem;
+}
+.modal-overlay {
+  position: fixed;
+  inset: 0;
+  background-color: rgba(0, 0, 0, 0.5);
+  display: flex;
+  justify-content: center;
+  align-items: center;
+  z-index: 50;
+}
+.modal-content {
+  background-color: white;
+  border-radius: 0.5rem;
+  padding: 1.5rem;
+  width: 100%;
+  max-width: 400px;
+}
+.btn {
+  font-weight: bold;
+  padding: 0.5rem 1rem;
+  border-radius: 0.5rem;
+  border: none;
+  cursor: pointer;
+}
+.btn-secondary {
+  background-color: #e5e7eb;
+  color: #1f2937;
 }
 </style>
