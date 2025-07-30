@@ -291,7 +291,8 @@ def get_exam():
         query = db.session.query(
             Exam,
             Chapter.ChapterName,
-            Subject.SubjectName
+            Subject.SubjectName,
+            Chapter.SubjectID  # Added SubjectID to the query
         ).join(Exam.chapter).join(Chapter.subject)
 
         if subject_id:
@@ -304,14 +305,17 @@ def get_exam():
         all_exams = query.all()
 
         result = []
-        for exam, chapter_name, subject_name in all_exams:
+        # Unpack the new SubjectID from the query result
+        for exam, chapter_name, subject_name, subject_id_val in all_exams:
             result.append({
                 'ExamID': exam.ExamID,
                 'ExamName': exam.ExamName,
                 'TotalQuestions': exam.TotalQuestions,
                 'TotalDuration': exam.TotalDuration,
                 'ExamDate': exam.ExamDate.strftime("%Y-%m-%d"),
+                'ChapterID': exam.ChapterID,  # Added ChapterID
                 'ChapterName': chapter_name,
+                'SubjectID': subject_id_val,  # Added SubjectID
                 'SubjectName': subject_name,
                 'Published': exam.Published,
                 'ExamType': exam.ExamType,

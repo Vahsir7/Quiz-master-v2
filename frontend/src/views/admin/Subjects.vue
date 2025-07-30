@@ -3,7 +3,7 @@
     <header class="content-header">
       <h2 class="content-header__title">Manage Subjects</h2>
       <div class="header-actions">
-        <input type="text" v-model="search" placeholder="Search Subjects..." @input="fetchSubjects" class="form-input w-auto">
+
         <button @click="openAddModal" class="btn btn-primary">
           <i class="fas fa-plus"></i> Add New Subject
         </button>
@@ -13,7 +13,12 @@
     <main class="content-main">
       <div v-if="loading">Loading subjects...</div>
       <div v-if="error">{{ error }}</div>
-
+      <div class="filter-bar">
+        <div class="filter-group">
+          <input type="text" v-model="search" placeholder="Search subjects..." class="form-input" />
+          <i class="fas fa-search"></i>
+        </div>
+      </div>
       <div v-if="!loading && !error" class="data-table-wrapper">
         <table class="data-table">
           <thead>
@@ -24,7 +29,7 @@
             </tr>
           </thead>
           <tbody>
-            <tr v-for="subject in subjects" :key="subject.SubjectID">
+            <tr v-for="subject in filteredSubjects" :key="subject.SubjectID">
               <td>{{ subject.SubjectName }}</td>
               <td>{{ subject.Description }}</td>
               <td class="actions">
@@ -33,7 +38,7 @@
                 <button @click="openDeleteModal(subject)" class="icon-delete" title="Delete Subject"><i class="fas fa-trash-alt"></i></button>
               </td>
             </tr>
-            <tr v-if="subjects.length === 0">
+            <tr v-if="filteredSubjects.length === 0">
               <td colspan="3" style="text-align: center;">No subjects found.</td>
             </tr>
           </tbody>
@@ -63,7 +68,7 @@
           </form>
         </div>
       </div>
-      
+
       <div v-if="isDeleteModalOpen" class="modal-overlay">
          <div class="modal-content text-center">
             <div class="modal-body">
@@ -92,7 +97,7 @@ export default {
     return {
       loading: true,
       error: null,
-      subjects: [],
+      subjects: [], // This will hold all subjects
       search: '',
       isModalOpen: false,
       isDeleteModalOpen: false,
@@ -107,14 +112,27 @@ export default {
       subjectToDelete: null,
     };
   },
+  computed: {
+    filteredSubjects() {
+      if (!this.search) {
+        return this.subjects;
+      }
+      const lowerCaseSearch = this.search.toLowerCase();
+      return this.subjects.filter(subject =>
+        subject.SubjectName.toLowerCase().includes(lowerCaseSearch) ||
+        subject.Description.toLowerCase().includes(lowerCaseSearch)
+      );
+    }
+  },
   async mounted() {
     this.fetchSubjects();
   },
   methods: {
+    // fetchSubjects now only gets the data once
     async fetchSubjects() {
       this.loading = true;
       try {
-        const response = await apiService.getSubjects(this.search);
+        const response = await apiService.getSubjects(); // No search parameter here
         this.subjects = response.data;
       } catch (err) {
         this.error = 'Failed to load subjects.';
@@ -122,6 +140,7 @@ export default {
         this.loading = false;
       }
     },
+    // Other methods remain the same but will now refetch all data on change
     resetModal() {
       this.modal = {
         isEditMode: false,
@@ -148,7 +167,7 @@ export default {
         } else {
           await apiService.createSubject(this.modal.data);
         }
-        this.fetchSubjects();
+        this.fetchSubjects(); // Refetch all subjects after change
         this.closeModal();
       } catch (err) {
         this.error = `Failed to ${this.modal.isEditMode ? 'update' : 'create'} subject.`;
@@ -166,7 +185,7 @@ export default {
         if (!this.subjectToDelete) return;
         try {
             await apiService.deleteSubject(this.subjectToDelete.SubjectID);
-            this.fetchSubjects();
+            this.fetchSubjects(); // Refetch all subjects after change
             this.closeDeleteModal();
         } catch (err) {
             this.error = 'Failed to delete subject.';

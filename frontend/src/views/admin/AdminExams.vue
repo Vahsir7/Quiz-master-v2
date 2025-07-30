@@ -3,7 +3,6 @@
     <header class="content-header">
       <h2 class="content-header__title">Manage Exams</h2>
       <div class="header-actions">
-        <input type="text" v-model="filters.search" placeholder="Search by exam name..." @input="fetchExams" class="form-input w-auto mr-4">
         <button @click="openAddModal" class="btn btn-primary">
           <i class="fas fa-plus mr-2"></i> Add New Exam
         </button>
@@ -13,6 +12,9 @@
     <main class="content-main">
       <div class="filter-bar">
         <div class="filter-group">
+          <input type="text" v-model="filters.search" placeholder="Search by exam name..." class="form-input w-auto mr-4">
+        </div>
+        <div class="filter-group">
           <select v-model="filters.subject_id" @change="onSubjectChange" class="form-select">
             <option value="">All Subjects</option>
             <option v-for="subject in subjects" :key="subject.SubjectID" :value="subject.SubjectID">
@@ -21,7 +23,7 @@
           </select>
         </div>
         <div class="filter-group">
-          <select v-model="filters.chapter_id" @change="fetchExams" class="form-select" :disabled="!filters.subject_id">
+          <select v-model="filters.chapter_id" class="form-select" :disabled="!filters.subject_id">
             <option value="">All Chapters</option>
             <option v-for="chapter in chapters" :key="chapter.ChapterID" :value="chapter.ChapterID">
               {{ chapter.ChapterName }}
@@ -48,12 +50,12 @@
             </tr>
           </thead>
           <tbody>
-            <tr v-for="exam in exams" :key="exam.ExamID">
+            <tr v-for="exam in filteredExams" :key="exam.ExamID">
               <td class="font-medium">{{ exam.ExamName }}</td>
               <td>{{ exam.SubjectName }}</td>
               <td>{{ exam.ChapterName }}</td>
               <td>
-                <span :class="exam.Published ? 'text-green-500' : 'text-red-500'">
+                <span :class="exam.Published ? 'text-success' : 'text-danger'">
                   {{ exam.Published ? 'Yes' : 'No' }}
                 </span>
               </td>
@@ -75,8 +77,8 @@
                 </button>
               </td>
             </tr>
-            <tr v-if="exams.length === 0">
-              <td colspan="8" class="text-center text-gray-500 py-4">No exams found.</td>
+            <tr v-if="filteredExams.length === 0">
+              <td colspan="8" class="text-center text-muted py-4">No exams found.</td>
             </tr>
           </tbody>
         </table>
@@ -209,30 +211,50 @@ export default {
       examToPublish: null,
     };
   },
+  computed: {
+    filteredExams() {
+      let filtered = this.exams;
+
+      // Filter by search query
+      if (this.filters.search) {
+        const lowerCaseSearch = this.filters.search.toLowerCase();
+        filtered = filtered.filter(exam =>
+          exam.ExamName.toLowerCase().includes(lowerCaseSearch)
+        );
+      }
+
+      // Filter by subject
+      if (this.filters.subject_id) {
+        filtered = filtered.filter(exam => exam.SubjectID === this.filters.subject_id);
+      }
+
+      // Filter by chapter
+      if (this.filters.chapter_id) {
+        filtered = filtered.filter(exam => exam.ChapterID === this.filters.chapter_id);
+      }
+
+      return filtered;
+    }
+  },
   async mounted() {
-    this.fetchExams();
-    this.fetchSubjects();
+    this.fetchAllData();
   },
   methods: {
-    async fetchExams() {
+    async fetchAllData() {
       this.loading = true;
       this.error = null;
       try {
-        const response = await apiService.getExams(this.filters);
-        this.exams = response.data;
+        const [examsRes, subjectsRes] = await Promise.all([
+          apiService.getExams(),
+          apiService.getSubjects()
+        ]);
+        this.exams = examsRes.data;
+        this.subjects = subjectsRes.data;
       } catch (err) {
-        this.error = 'Failed to load exams.';
+        this.error = 'Failed to load page data.';
         console.error(err);
       } finally {
         this.loading = false;
-      }
-    },
-    async fetchSubjects() {
-      try {
-        const response = await apiService.getSubjects();
-        this.subjects = response.data;
-      } catch (err) {
-        console.error('Failed to load subjects for modal.');
       }
     },
     async fetchChaptersForSubject(subjectId) {
@@ -254,7 +276,6 @@ export default {
       } else {
         this.chapters = [];
       }
-      this.fetchExams();
     },
     resetModal() {
       this.modal = {
@@ -299,7 +320,7 @@ export default {
           }
           await apiService.createExam(this.modal.data.ChapterID, this.modal.data);
         }
-        this.fetchExams();
+        this.fetchAllData(); // Refetch all data
         this.closeModal();
       } catch (err) {
         this.error = `Failed to save exam.`;
@@ -318,7 +339,7 @@ export default {
       if (!this.examToDelete) return;
       try {
         await apiService.deleteExam(this.examToDelete.ExamID);
-        this.fetchExams();
+        this.fetchAllData(); // Refetch all data
         this.closeDeleteModal();
       } catch (err) {
         this.error = 'Failed to delete exam.';
@@ -337,7 +358,11 @@ export default {
       if (!this.examToPublish) return;
       try {
         await apiService.publishExam(this.examToPublish.ExamID);
-        this.examToPublish.Published = !this.examToPublish.Published;
+        // Find the exam and update its published status locally for immediate feedback
+        const exam = this.exams.find(e => e.ExamID === this.examToPublish.ExamID);
+        if (exam) {
+            exam.Published = !exam.Published;
+        }
       } catch (err) {
         this.error = `Failed to ${this.examToPublish.Published ? 'unpublish' : 'publish'} exam.`;
         console.error(err);
@@ -359,28 +384,3 @@ export default {
   },
 };
 </script>
-
-<style scoped>
-.filter-bar {
-  display: flex;
-  flex-wrap: wrap;
-  gap: 1rem;
-  padding: 1rem;
-  background-color: #ffffff;
-  border-radius: 8px;
-  margin-bottom: 1.5rem;
-  box-shadow: 0 2px 4px rgba(0,0,0,0.05);
-}
-
-.filter-group {
-  flex: 1 1 200px;
-}
-
-.search-input, .filter-select {
-  width: 100%;
-  padding: 0.75rem;
-  border: 1px solid #bdc3c7;
-  border-radius: 5px;
-  font-size: 1rem;
-}
-</style>

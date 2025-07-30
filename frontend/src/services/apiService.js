@@ -128,7 +128,7 @@ export default {
   exportAllStudentData() {
     return apiClient.post('/admin/students/export');
   },
-  
+
 
   // == Student Section ==
   getStudentDashboard() {
@@ -220,3 +220,4 @@ export default {
     return apiClient.post(`/student/${studentId}/history/export`);
   },
 };
+  

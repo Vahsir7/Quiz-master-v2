@@ -3,7 +3,6 @@
     <header class="content-header">
       <h2 class="content-header__title">Manage Chapters</h2>
       <div class="header-actions">
-        <input type="text" v-model="search" placeholder="Search Chapters..." @input="fetchChapters" class="form-input w-auto">
         <button @click="openAddModal" class="btn btn-primary">
           <i class="fas fa-plus mr-2"></i> Add New Chapter
         </button>
@@ -11,6 +10,12 @@
     </header>
 
     <main class="content-main">
+      <div class="filter-bar">
+        <div class="filter-group">
+          <input type="text" v-model="search" placeholder="Search subjects..." class="form-input" />
+          <i class="fas fa-search"></i>
+        </div>
+      </div>
       <div class="mb-4 p-4 border rounded-lg bg-gray-50">
           <h2 class="text-xl font-bold text-gray-800">Subject: {{ $route.query.subjectName || '...' }}</h2>
           <p class="text-sm text-gray-600 mt-1">{{ $route.query.subjectDescription || 'Chapters for the selected subject.' }}</p>
@@ -29,7 +34,7 @@
             </tr>
           </thead>
           <tbody class="bg-white divide-y divide-gray-200">
-            <tr v-for="chapter in chapters" :key="chapter.ChapterID">
+            <tr v-for="chapter in filteredChapters" :key="chapter.ChapterID">
               <td>{{ chapter.ChapterName }}</td>
               <td>{{ chapter.Description }}</td>
               <td class="actions">
@@ -38,14 +43,14 @@
                 <button @click="openDeleteModal(chapter)" class="icon-delete" title="Delete Chapter"><i class="fas fa-trash-alt"></i></button>
               </td>
             </tr>
-            <tr v-if="chapters.length === 0">
+            <tr v-if="filteredChapters.length === 0">
               <td colspan="3" class="text-center text-gray-500">No chapters found for this subject.</td>
             </tr>
           </tbody>
         </table>
       </div>
 
-      <div v-if="isModalOpen" class="modal-overlay">
+       <div v-if="isModalOpen" class="modal-overlay">
           <div class="modal-content">
             <form @submit.prevent="handleFormSubmit">
               <div class="modal-header">
@@ -118,6 +123,19 @@ export default {
       chapterToDelete: null,
     };
   },
+   computed: {
+    // Filter chapters based on search query
+    filteredChapters() {
+      if (!this.search) {
+        return this.chapters;
+      }
+      const lowerCaseSearch = this.search.toLowerCase();
+      return this.chapters.filter(chapter =>
+        chapter.ChapterName.toLowerCase().includes(lowerCaseSearch) ||
+        (chapter.Description && chapter.Description.toLowerCase().includes(lowerCaseSearch))
+      );
+    }
+  },
   async mounted() {
     this.fetchChapters();
   },
@@ -125,7 +143,8 @@ export default {
     async fetchChapters() {
       this.loading = true;
       try {
-        const response = await apiService.getChapters(this.subjectId, this.search);
+        // No search parameter passed, get all chapters for the subject
+        const response = await apiService.getChapters(this.subjectId);
         this.chapters = response.data;
       } catch (err) {
         this.error = 'Failed to load chapters for this subject.';
@@ -160,7 +179,7 @@ export default {
         } else {
           await apiService.createChapter(this.subjectId, this.modal.data);
         }
-        this.fetchChapters();
+        this.fetchChapters(); // Refetch all chapters
         this.closeModal();
       } catch (err) {
         this.error = `Failed to ${this.modal.isEditMode ? 'update' : 'create'} chapter.`;
@@ -179,7 +198,7 @@ export default {
         if (!this.chapterToDelete) return;
         try {
             await apiService.deleteChapter(this.chapterToDelete.ChapterID);
-            this.fetchChapters();
+            this.fetchChapters(); // Refetch all chapters
             this.closeDeleteModal();
         } catch (err) {
             this.error = 'Failed to delete chapter.';
