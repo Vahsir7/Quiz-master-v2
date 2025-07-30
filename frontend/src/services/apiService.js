@@ -53,12 +53,8 @@ export default {
     }
     return apiClient.put(`/student/${studentId}`, studentData);
   },
-  deleteStudentProfile() {
-    const studentId = localStorage.getItem('student_id');
-    if (!studentId) {
-      return Promise.reject(new Error('Student ID not found.'));
-    }
-    return apiClient.delete(`/student/${studentId}`);
+  deleteStudent(studentId) {
+    return apiClient.delete(`/admin/students?student_id=${studentId}`);
   },
 
   getSubjects(search = ''){
@@ -220,4 +216,3 @@ export default {
     return apiClient.post(`/student/${studentId}/history/export`);
   },
 };
-  
