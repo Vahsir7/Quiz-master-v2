@@ -5,13 +5,10 @@ services:
     build:
       context: .
       dockerfile: backend.Dockerfile
-    container_name: flask_backend
     environment:
       - REDIS_URL=redis://redis:6379/0
       - CELERY_BROKER_URL=redis://redis:6379/0
       - CELERY_RESULT_BACKEND=redis://redis:6379/0
-    ports:
-      - "5000:5000"
     depends_on:
       - redis
 
@@ -19,7 +16,6 @@ services:
     build:
       context: .
       dockerfile: backend.Dockerfile
-    container_name: celery_worker
     command: celery -A celery_worker.celery worker --loglevel=info
     environment:
       - REDIS_URL=redis://redis:6379/0
@@ -33,7 +29,6 @@ services:
     build:
       context: .
       dockerfile: backend.Dockerfile
-    container_name: celery_beat
     command: celery -A celery_worker.celery beat --loglevel=info
     environment:
       - REDIS_URL=redis://redis:6379/0
@@ -47,7 +42,6 @@ services:
     build:
       context: .
       dockerfile: frontend.Dockerfile
-    container_name: vue_frontend
     ports:
       - "80:80"
     depends_on:
@@ -55,6 +49,3 @@ services:
 
   redis:
     image: redis:7-alpine
-    container_name: redis
-    ports:
-      - "6379:6379"
