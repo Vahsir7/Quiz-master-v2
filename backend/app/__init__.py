@@ -50,13 +50,4 @@ def create_app(config_class=Config):
             db.session.add(admin)
             db.session.commit()
 
-    from flask import send_from_directory
-    @app.route("/", defaults={"path": ""})
-    @app.route("/<path:path>")
-    def serve(path):
-        if path and os.path.exists(os.path.join(app.static_folder, path)):
-            return send_from_directory(app.static_folder, path)
-        return send_from_directory(app.static_folder, "index.html")
-
-
     return app
