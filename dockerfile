@@ -11,7 +11,7 @@ RUN pip install --no-cache-dir -r requirements.txt gunicorn
 COPY backend/ .
 
 # Use Node for frontend build
-FROM node:18 AS frontend
+FROM node:20 AS frontend
 WORKDIR /frontend
 COPY frontend/ .
 RUN npm install && npm run build
