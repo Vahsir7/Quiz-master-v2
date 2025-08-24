@@ -14,7 +14,7 @@ COPY backend/ .
 FROM node:18 AS frontend
 WORKDIR /frontend
 COPY frontend/ .
-RUN npm install && npm run dev
+RUN npm install && npm run build
 
 # Final stage: serve backend + frontend
 FROM python:3.10-slim
