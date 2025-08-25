@@ -1,0 +1,85 @@
+version: "3.9"
+
+services:
+  backend:
+    build:
+      context: .
+      dockerfile: backend.Dockerfile
+    container_name: backend
+    # Use the entrypoint you normally use locally:
+    command: python wsgi.py  # or: python app.py
+    ports:
+      - "8000:8000"
+    environment:
+      # Point Celery to Redis inside the Compose network
+      - CELERY_BROKER_URL=redis://redis:6379/0
+      - CELERY_RESULT_BACKEND=redis://redis:6379/0
+      # Any Flask env you need:
+      - FLASK_ENV=development
+      # If you use config via env vars, add them here (JWT secret, DB URI, etc.)
+    volumes:
+      # Live-reload style dev: mount your source into the container
+      - ./backend:/app
+      # Persist SQLite DB and celery beat schedule (if you use them)
+      - backend_data:/app/instance
+    depends_on:
+      - redis
+
+  celery_worker:
+    build:
+      context: .
+      dockerfile: backend.Dockerfile
+    container_name: celery_worker
+    # Matches your local command: celery -A celery_worker.celery worker --loglevel=info
+    command: celery -A celery_worker.celery worker --loglevel=info
+    environment:
+      - CELERY_BROKER_URL=redis://redis:6379/0
+      - CELERY_RESULT_BACKEND=redis://redis:6379/0
+    volumes:
+      - ./backend:/app
+      - backend_data:/app/instance
+    depends_on:
+      - redis
+      - backend
+
+  celery_beat:
+    build:
+      context: .
+      dockerfile: backend.Dockerfile
+    container_name: celery_beat
+    # Matches your local command: celery -A celery_worker.celery beat --loglevel=info
+    command: celery -A celery_worker.celery beat --loglevel=info
+    environment:
+      - CELERY_BROKER_URL=redis://redis:6379/0
+      - CELERY_RESULT_BACKEND=redis://redis:6379/0
+    volumes:
+      - ./backend:/app
+      - backend_data:/app/instance
+    depends_on:
+      - redis
+      - backend
+
+  frontend:
+    build:
+      context: .
+      dockerfile: frontend.Dockerfile
+    container_name: frontend
+    ports:
+      - "5173:5173"
+    environment:
+      # Make your Vue app call the backend through localhost:8000 in dev
+      - VITE_API_URL=http://localhost:8000
+    volumes:
+      - ./frontend:/app
+      - /app/node_modules
+    depends_on:
+      - backend
+
+  redis:
+    image: redis:7-alpine
+    container_name: redis
+    ports:
+      - "6379:6379"
+
+volumes:
+  backend_data:

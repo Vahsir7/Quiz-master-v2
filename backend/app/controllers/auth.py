@@ -54,3 +54,7 @@ def login():
         
     return jsonify({'message': 'Invalid credentials'}), 401
 
+@auth_bp.route("/wake", methods=["GET"])
+def wake():
+    return jsonify({"status": "ok", "message": "API is awake"}), 200
+

@@ -17,12 +17,15 @@ import StudentExams from '../views/student/Exams.vue';
 import StudentHistory from '../views/student/History.vue';
 import Quiz from '../views/student/Quiz.vue';
 import Results from '../views/student/Results.vue';
-import StudentProfile from '../views/student/Profile.vue'; 
+import StudentProfile from '../views/student/Profile.vue';
+
+import ApiLoading from '../views/ApiLoading.vue';
 
 const routes = [
     {
         path: '/',
-        redirect: '/login',
+        name: 'ApiLoading',
+        component: ApiLoading,
     },
     {
         path: '/login',

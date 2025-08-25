@@ -35,7 +35,9 @@ def create_app(config_class=Config):
     from .controllers.student import student_bp
     app.register_blueprint(student_bp, url_prefix='/api/student')
 
-    with app.app_context():
+    @app.cli.command("init-db")
+    def init_db_command():
+        """Creates the database tables and initial admin."""
         from . import models
         db.create_all()
         admin = models.Admin.query.get(1)
@@ -49,5 +51,6 @@ def create_app(config_class=Config):
             admin.set_password(password)
             db.session.add(admin)
             db.session.commit()
+        print("Initialized the database.")
 
     return app

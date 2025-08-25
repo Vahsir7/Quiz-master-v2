@@ -1,36 +1,27 @@
-# Use Python for backend
-FROM python:3.10-slim AS backend
+# Stage 1: Build Vue frontend
+FROM node:20 AS frontend-build
+WORKDIR /app/frontend
+COPY frontend/package*.json ./
+RUN npm install
+COPY frontend/ ./
+RUN npm run build
+
+# Stage 2: Python backend
+FROM python:3.11-slim
 
 WORKDIR /app
 
-# Install backend dependencies
+# Install dependencies
 COPY backend/requirements.txt .
 RUN pip install --no-cache-dir -r requirements.txt gunicorn
 
 # Copy backend code
-COPY backend/ .
+COPY backend/ ./backend/
 
-# Use Node for frontend build
-FROM node:20 AS frontend
-WORKDIR /frontend
-COPY frontend/ .
-RUN npm install && npm run build
+# Copy built frontend into Flask static folder
+COPY --from=frontend-build /app/frontend/dist ./backend/app/static
 
-# Final stage: serve backend + frontend
-FROM python:3.10-slim
-WORKDIR /app
-
-# Copy backend + installed packages
-COPY --from=backend /app /app
-RUN pip install gunicorn
-
-# Copy built Vue frontend into Flask static folder
-COPY --from=frontend /frontend/dist /app/dist
-
-# Expose port
+# Expose the port the app runs on
 EXPOSE 8080
 
-# Start Gunicorn
-CMD ["gunicorn", "-b", ":8080", "backend.app:app"]
-
-
+# The command to run the application will be handled by Docker Compose
