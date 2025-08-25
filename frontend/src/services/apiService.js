@@ -1,7 +1,7 @@
 import axios from 'axios';
 
 const apiClient = axios.create({
-  baseURL: import.meta.env.VITE_API_URL || 'http://127.0.0.1:5000/api',
+  baseURL: import.meta.env.VITE_API_URL,
   headers: {
     'Content-Type': 'application/json',
   },
@@ -217,6 +217,6 @@ export default {
   },
 
   apiHealthCheck() {
-    return apiClient.get('/wake');
+    return apiClient.get('/auth/wake');
   }
 };
